@@ -1,1 +1,368 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการร้านรับจำนำ (Pawnshop System)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
 
+    <!-- Navbar -->
+    <nav class="bg-amber-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-store text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold">ระบบจัดการร้านรับจำนำ</h1>
+            </div>
+            <button onclick="openNewPawnModal()" class="bg-amber-800 hover:bg-amber-900 text-white font-medium px-4 py-2 rounded-lg transition shadow flex items-center gap-2">
+                <i class="fa-solid fa-plus"></i>
+                <span>ฝากสินค้าใหม่</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- Dashboard Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-500">
+                <p class="text-gray-500 text-sm">สัญญาทั้งหมด</p>
+                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="stat-total">0</h3>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                <p class="text-gray-500 text-sm">กำลังจำนำอยู่</p>
+                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="stat-active">0</h3>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-rose-500">
+                <p class="text-gray-500 text-sm">เลยกำหนดชำระ</p>
+                <h3 class="text-2xl font-bold text-rose-600 mt-1" id="stat-overdue">0</h3>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-amber-500">
+                <p class="text-gray-500 text-sm">ยอดเงินฝากรวม (กำลังจำนำ)</p>
+                <h3 class="text-2xl font-bold text-gray-800 mt-1" id="stat-principal">฿0.00</h3>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+            <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center flex-wrap gap-2">
+                <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-list"></i> รายการสัญญาจำนำทั้งหมด
+                </h2>
+                <span class="text-sm text-gray-500" id="current-date-display"></span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-600 text-sm border-b">
+                            <th class="p-3">ID</th>
+                            <th class="p-3">ชื่อลูกค้า</th>
+                            <th class="p-3">รายการสินค้า</th>
+                            <th class="p-3">เงินต้น</th>
+                            <th class="p-3">วันที่ฝาก</th>
+                            <th class="p-3">ครบกำหนด</th>
+                            <th class="p-3">สถานะ / ดอกเบี้ย+ค่าปรับ</th>
+                            <th class="p-3 text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pawn-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+                        <!-- รายการจะถูกแสดงด้วย JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-4 text-center text-gray-500 text-sm">
+        ระบบรับจำนำ Cloud-Ready &copy; 2026
+    </footer>
+
+    <!-- Modal: ฝากสินค้าใหม่ -->
+    <div id="new-pawn-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="text-lg font-bold text-gray-800">ทำรายการฝากสินค้าใหม่</h3>
+                <button onclick="closeNewPawnModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="pawn-form" onsubmit="handleNewPawn(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อลูกค้า *</label>
+                    <input type="text" id="customer-name" required class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none" placeholder="เช่น นายสมชาย ใจดี">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อสินค้า/ทรัพย์สิน *</label>
+                    <input type="text" id="item-name" required class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none" placeholder="เช่น ทองรูปพรรณ 1 บาท">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">จำนวนเงินรับจำนำ (บาท) *</label>
+                    <input type="number" id="principal-amount" step="0.01" min="1" required class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none" placeholder="10000">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">วันที่ฝาก</label>
+                    <input type="date" id="start-date" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
+                    <p class="text-xs text-gray-500 mt-1">* หากไม่เลือกจะใช้วันนี้โดยอัตโนมัติ (ครบกำหนดทุก 10 วัน)</p>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeNewPawnModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">บันทึกสัญญา</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: จัดการสัญญา (ต่อดอก / ไถ่ถอน) -->
+    <div id="action-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="text-lg font-bold text-gray-800" id="action-title">รายละเอียดสัญญา</h3>
+                <button onclick="closeActionModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div id="action-details" class="space-y-3 bg-gray-50 p-4 rounded-lg text-sm mb-4">
+                <!-- รายละเอียดสัญญาจะถูกใส่ด้วย JS -->
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button onclick="closeActionModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">ปิด</button>
+                <button id="btn-action-submit" onclick="executeAction()" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // โครงสร้างข้อมูลตั้งต้น
+        let pawnRecords = JSON.parse(localStorage.getItem('pawnshop_records')) || [];
+        let currentActiveRecordId = null;
+        let currentActionMode = null; // 'extend' หรือ 'redeem'
+
+        // แสดงวันที่ปัจจุบัน
+        document.getElementById('current-date-display').innerText = `วันที่ปัจจุบัน: ${new Date().toLocaleDateString('th-TH')}`;
+
+        // โหลดข้อมูลเมื่อเปิดหน้าเว็บ
+        renderTable();
+
+        function saveToStorage() {
+            localStorage.setItem('pawnshop_records', JSON.stringify(pawnRecords));
+            renderTable();
+        }
+
+        // คำนวณดอกเบี้ยและค่าปรับ
+        function calculateStatus(record) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const dueDate = new Date(record.dueDate);
+            dueDate.setHours(0, 0, 0, 0);
+
+            const principal = parseFloat(record.principal);
+            const interest = principal * 0.05; // ดอกเบี้ย 5% ต่อ 10 วัน
+
+            // คำนวณจำนวนวันที่เกินกำหนด
+            const diffTime = today - dueDate;
+            const overdueDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+
+            // ค่าปรับ 1% ของเงินต้นต่อวันที่เกินกำหนด
+            const fine = overdueDays > 0 ? (principal * 0.01 * overdueDays) : 0;
+            const totalToPay = principal + interest + fine;
+
+            return {
+                interest,
+                overdueDays,
+                fine,
+                totalToPay,
+                isOverdue: overdueDays > 0
+            };
+        }
+
+        // แสดงตารางและสถิติ
+        function renderTable() {
+            const tbody = document.getElementById('pawn-table-body');
+            tbody.innerHTML = '';
+
+            let totalCount = pawnRecords.length;
+            let activeCount = 0;
+            let overdueCount = 0;
+            let totalPrincipal = 0;
+
+            if (pawnRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-gray-400">ยังไม่มีรายการจำนำในระบบ กดปุ่ม "ฝากสินค้าใหม่" เพื่อเริ่มต้น</td></tr>`;
+            }
+
+            pawnRecords.forEach(r => {
+                const calc = calculateStatus(r);
+                
+                if (r.status === 'กำลังจำนำ') {
+                    activeCount++;
+                    totalPrincipal += parseFloat(r.principal);
+                    if (calc.isOverdue) overdueCount++;
+                }
+
+                let statusBadge = '';
+                if (r.status === 'ไถ่ถอนแล้ว') {
+                    statusBadge = `<span class="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full text-xs font-medium">ไถ่ถอนแล้ว</span>`;
+                } else if (calc.isOverdue) {
+                    statusBadge = `<span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-medium">เกินกำหนด ${calc.overdueDays} วัน (ปรับ ฿${calc.fine.toFixed(2)})</span>`;
+                } else {
+                    statusBadge = `<span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-medium">ปกติ (ดอก ฿${calc.interest.toFixed(2)})</span>`;
+                }
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 border-b';
+                row.innerHTML = `
+                    <td class="p-3 font-semibold text-amber-700">#${r.id}</td>
+                    <td class="p-3 font-medium">${r.customerName}</td>
+                    <td class="p-3">${r.itemName}</td>
+                    <td class="p-3 font-semibold">฿${parseFloat(r.principal).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+                    <td class="p-3 text-gray-500">${new Date(r.startDate).toLocaleDateString('th-TH')}</td>
+                    <td class="p-3 text-gray-500">${new Date(r.dueDate).toLocaleDateString('th-TH')}</td>
+                    <td class="p-3">${statusBadge}</td>
+                    <td class="p-3 text-center">
+                        ${r.status === 'กำลังจำนำ' ? `
+                            <button onclick="openActionModal(${r.id}, 'extend')" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2.5 py-1 rounded-md text-xs font-medium mr-1">
+                                <i class="fa-solid fa-arrows-rotate"></i> ต่อดอก
+                            </button>
+                            <button onclick="openActionModal(${r.id}, 'redeem')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2.5 py-1 rounded-md text-xs font-medium">
+                                <i class="fa-solid fa-hand-holding-dollar"></i> ไถ่ถอน
+                            </button>
+                        ` : `-`}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // อัปเดตการ์ด Dashboard
+            document.getElementById('stat-total').innerText = totalCount;
+            document.getElementById('stat-active').innerText = activeCount;
+            document.getElementById('stat-overdue').innerText = overdueCount;
+            document.getElementById('stat-principal').innerText = `฿${totalPrincipal.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+        }
+
+        // จัดการ Modal ฝากสินค้า
+        function openNewPawnModal() {
+            document.getElementById('pawn-form').reset();
+            document.getElementById('start-date').valueAsDate = new Date();
+            document.getElementById('new-pawn-modal').classList.remove('hidden');
+        }
+
+        function closeNewPawnModal() {
+            document.getElementById('new-pawn-modal').classList.add('hidden');
+        }
+
+        function handleNewPawn(event) {
+            event.preventDefault();
+            
+            const customerName = document.getElementById('customer-name').value;
+            const itemName = document.getElementById('item-name').value;
+            const principal = parseFloat(document.getElementById('principal-amount').value);
+            const startDateInput = document.getElementById('start-date').value;
+
+            const startDate = startDateInput ? new Date(startDateInput) : new Date();
+            const dueDate = new Date(startDate);
+            dueDate.setDate(dueDate.getDate() + 10); // บวก 10 วัน
+
+            const newRecord = {
+                id: pawnRecords.length > 0 ? Math.max(...pawnRecords.map(r => r.id)) + 1 : 1,
+                customerName,
+                itemName,
+                principal,
+                startDate: startDate.toISOString(),
+                dueDate: dueDate.toISOString(),
+                status: 'กำลังจำนำ'
+            };
+
+            pawnRecords.push(newRecord);
+            saveToStorage();
+            closeNewPawnModal();
+        }
+
+        // จัดการ Modal ต่อดอก / ไถ่ถอน
+        function openActionModal(id, mode) {
+            currentActiveRecordId = id;
+            currentActionMode = mode;
+
+            const record = pawnRecords.find(r => r.id === id);
+            if (!record) return;
+
+            const calc = calculateStatus(record);
+            const detailsBox = document.getElementById('action-details');
+            const modalTitle = document.getElementById('action-title');
+            const submitBtn = document.getElementById('btn-action-submit');
+
+            if (mode === 'extend') {
+                modalTitle.innerText = `ต่อดอกเบี้ย - สัญญา #${record.id}`;
+                submitBtn.innerText = 'ยืนยันการต่อดอกเบี้ย';
+                submitBtn.className = 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700';
+
+                detailsBox.innerHTML = `
+                    <div class="flex justify-between"><span>ลูกค้า:</span> <strong class="text-gray-800">${record.customerName}</strong></div>
+                    <div class="flex justify-between"><span>สินค้า:</span> <span>${record.itemName}</span></div>
+                    <div class="flex justify-between"><span>เงินต้น:</span> <span>฿${record.principal.toLocaleString('th-TH')}</span></div>
+                    <hr class="my-2">
+                    <div class="flex justify-between"><span>ดอกเบี้ย (5% / 10 วัน):</span> <span>฿${calc.interest.toFixed(2)}</span></div>
+                    ${calc.overdueDays > 0 ? `<div class="flex justify-between text-red-600"><span>ค่าปรับเกินกำหนด (${calc.overdueDays} วัน):</span> <span>฿${calc.fine.toFixed(2)}</span></div>` : ''}
+                    <div class="flex justify-between text-base font-bold text-amber-800 pt-2 border-t">
+                        <span>ยอดที่ต้องชำระต่อดอก:</span>
+                        <span>฿${(calc.interest + calc.fine).toFixed(2)}</span>
+                    </div>
+                `;
+            } else if (mode === 'redeem') {
+                modalTitle.innerText = `ไถ่ถอนสินค้า - สัญญา #${record.id}`;
+                submitBtn.innerText = 'ยืนยันการไถ่ถอนสินค้า';
+                submitBtn.className = 'px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700';
+
+                detailsBox.innerHTML = `
+                    <div class="flex justify-between"><span>ลูกค้า:</span> <strong class="text-gray-800">${record.customerName}</strong></div>
+                    <div class="flex justify-between"><span>สินค้า:</span> <span>${record.itemName}</span></div>
+                    <hr class="my-2">
+                    <div class="flex justify-between"><span>เงินต้น:</span> <span>฿${record.principal.toLocaleString('th-TH')}</span></div>
+                    <div class="flex justify-between"><span>ดอกเบี้ย (5%):</span> <span>฿${calc.interest.toFixed(2)}</span></div>
+                    ${calc.overdueDays > 0 ? `<div class="flex justify-between text-red-600"><span>ค่าปรับเกินกำหนด (${calc.overdueDays} วัน):</span> <span>฿${calc.fine.toFixed(2)}</span></div>` : ''}
+                    <div class="flex justify-between text-base font-bold text-emerald-800 pt-2 border-t">
+                        <span>ยอดรวมไถ่ถอนทั้งหมด:</span>
+                        <span>฿${calc.totalToPay.toFixed(2)}</span>
+                    </div>
+                `;
+            }
+
+            document.getElementById('action-modal').classList.remove('hidden');
+        }
+
+        function closeActionModal() {
+            document.getElementById('action-modal').classList.add('hidden');
+        }
+
+        function executeAction() {
+            const record = pawnRecords.find(r => r.id === currentActiveRecordId);
+            if (!record) return;
+
+            if (currentActionMode === 'extend') {
+                // บวกวันครบกำหนดเพิ่มไปอีก 10 วัน
+                const currentDueDate = new Date(record.dueDate);
+                currentDueDate.setDate(currentDueDate.getDate() + 10);
+                record.dueDate = currentDueDate.toISOString();
+            } else if (currentActionMode === 'redeem') {
+                record.status = 'ไถ่ถอนแล้ว';
+            }
+
+            saveToStorage();
+            closeActionModal();
+        }
+    </script>
+</body>
+</html>

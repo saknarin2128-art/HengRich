@@ -69,7 +69,7 @@
             </div>
             
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[700px]">
+                <table class="w-full text-left border-collapse min-w-[850px]">
                     <thead>
                         <tr class="bg-gray-100 text-gray-600 text-xs md:text-sm border-b">
                             <th class="p-3">ID</th>
@@ -78,8 +78,8 @@
                             <th class="p-3">เงินต้น</th>
                             <th class="p-3">เงื่อนไข (ดอก / วัน)</th>
                             <th class="p-3">วันที่ฝาก</th>
-                            <th class="p-3">ครบกำหนด</th>
-                            <th class="p-3">สถานะ / ดอกเบี้ย+ค่าปรับ</th>
+                            <th class="p-3">วันครบกำหนด / หมดสัญญา</th>
+                            <th class="p-3">นับถอยหลัง / สถานะ</th>
                             <th class="p-3 text-center">จัดการ</th>
                         </tr>
                     </thead>
@@ -117,15 +117,19 @@
                     <input type="number" id="principal-amount" step="0.01" min="1" required class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="10000">
                 </div>
                 
-                <!-- ส่วนปรับแต่งอัตราดอกเบี้ยและจำนวนวัน -->
-                <div class="grid grid-cols-2 gap-3 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <!-- ส่วนปรับแต่งอัตราดอกเบี้ย, ระยะเวลาสัญญา และระยะเวลาผ่อนผัน -->
+                <div class="grid grid-cols-3 gap-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
                     <div>
-                        <label class="block text-xs font-semibold text-amber-900 mb-1">อัตราดอกเบี้ย (%) *</label>
+                        <label class="block text-xs font-semibold text-amber-900 mb-1">ดอกเบี้ย (%) *</label>
                         <input type="number" id="interest-rate" step="0.1" min="0" value="5" required class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-amber-900 mb-1">ระยะเวลาสัญญา (วัน) *</label>
+                        <label class="block text-xs font-semibold text-amber-900 mb-1">สัญญา (วัน) *</label>
                         <input type="number" id="term-days" min="1" value="10" required class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-amber-900 mb-1">ผ่อนผัน (วัน) *</label>
+                        <input type="number" id="grace-days" min="0" value="7" required class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white" title="ระยะเวลาผ่อนผันหลังจากเลยกำหนดจนกว่าจะหมดสัญญา">
                     </div>
                 </div>
 
@@ -183,14 +187,18 @@
                     <input type="number" id="edit-principal" step="0.01" min="1" required class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none">
                 </div>
                 
-                <div class="grid grid-cols-2 gap-3 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <div class="grid grid-cols-3 gap-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
                     <div>
-                        <label class="block text-xs font-semibold text-amber-900 mb-1">อัตราดอกเบี้ย (%) *</label>
+                        <label class="block text-xs font-semibold text-amber-900 mb-1">ดอกเบี้ย (%) *</label>
                         <input type="number" id="edit-interest-rate" step="0.1" min="0" required class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-amber-900 mb-1">ระยะเวลา (วัน) *</label>
+                        <label class="block text-xs font-semibold text-amber-900 mb-1">สัญญา (วัน) *</label>
                         <input type="number" id="edit-term-days" min="1" required class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-amber-900 mb-1">ผ่อนผัน (วัน) *</label>
+                        <input type="number" id="edit-grace-days" min="0" required class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
                     </div>
                 </div>
 
@@ -244,7 +252,7 @@
             renderTable();
         }
 
-        // คำนวณดอกเบี้ยและค่าปรับ (คำนวณตามอัตราดอกเบี้ยและจำนวนวันที่ตั้งไว้)
+        // คำนวณดอกเบี้ย, วันที่เหลือครบกำหนด และวันหมดสัญญา
         function calculateStatus(record) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -255,13 +263,24 @@
             const principal = parseFloat(record.principal);
             const rate = record.interestRate !== undefined ? parseFloat(record.interestRate) : 5;
             const termDays = record.termDays !== undefined ? parseInt(record.termDays) : 10;
-            
+            const graceDays = record.graceDays !== undefined ? parseInt(record.graceDays) : 7;
+
+            // วันหมดสัญญา = วันครบกำหนด + วันผ่อนผัน
+            const expireDate = new Date(dueDate);
+            expireDate.setDate(expireDate.getDate() + graceDays);
+
             // ดอกเบี้ยตามอัตรา % ของเงินต้น
             const interest = principal * (rate / 100);
 
-            // คำนวณจำนวนวันที่เกินกำหนด
-            const diffTime = today - dueDate;
-            const overdueDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+            // คำนวณจำนวนวันที่เหลือจนถึงวันครบกำหนด และวันหมดสัญญา
+            const timeDiffToDue = dueDate - today;
+            const daysToDue = Math.ceil(timeDiffToDue / (1000 * 60 * 60 * 24));
+
+            const timeDiffToExpire = expireDate - today;
+            const daysToExpire = Math.ceil(timeDiffToExpire / (1000 * 60 * 60 * 24));
+
+            // คำนวณจำนวนวันที่เกินกำหนดชำระ
+            const overdueDays = daysToDue < 0 ? Math.abs(daysToDue) : 0;
 
             // ค่าปรับ 1% ของเงินต้นต่อวันที่เกินกำหนด
             const fine = overdueDays > 0 ? (principal * 0.01 * overdueDays) : 0;
@@ -273,8 +292,12 @@
                 fine,
                 totalToPay,
                 isOverdue: overdueDays > 0,
+                daysToDue,
+                daysToExpire,
+                expireDate,
                 rate,
-                termDays
+                termDays,
+                graceDays
             };
         }
 
@@ -301,13 +324,45 @@
                     if (calc.isOverdue) overdueCount++;
                 }
 
+                // การแสดงผลป้ายคำนวณวันและสถานะ
                 let statusBadge = '';
                 if (r.status === 'ไถ่ถอนแล้ว') {
                     statusBadge = `<span class="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full text-xs font-medium">ไถ่ถอนแล้ว</span>`;
-                } else if (calc.isOverdue) {
-                    statusBadge = `<span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-medium">เกินกำหนด ${calc.overdueDays} วัน (ปรับ ฿${calc.fine.toFixed(2)})</span>`;
+                } else if (calc.daysToExpire <= 0) {
+                    // หมดสัญญาแล้ว
+                    statusBadge = `
+                        <div class="flex flex-col gap-1">
+                            <span class="bg-red-100 text-red-800 px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1 w-fit">
+                                <i class="fa-solid fa-triangle-exclamation"></i> หมดสัญญาแล้ว (เลยกำหนด ${calc.overdueDays} วัน)
+                            </span>
+                            <span class="text-xs text-red-600 font-medium">ค่าปรับ ฿${calc.fine.toFixed(2)}</span>
+                        </div>
+                    `;
+                } else if (calc.daysToDue <= 0) {
+                    // เลยวันครบกำหนด แต่ยังไม่หมดสัญญา
+                    statusBadge = `
+                        <div class="flex flex-col gap-1">
+                            <span class="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 w-fit">
+                                <i class="fa-solid fa-clock"></i> เลยกำหนด ${calc.overdueDays} วัน (ปรับ ฿${calc.fine.toFixed(2)})
+                            </span>
+                            <span class="text-xs text-red-600 font-medium">⚠️ เหลืออีก ${calc.daysToExpire} วัน หมดสัญญา</span>
+                        </div>
+                    `;
                 } else {
-                    statusBadge = `<span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-medium">ปกติ (ดอก ฿${calc.interest.toFixed(2)})</span>`;
+                    // กำลังจำนำปกติ ยังไม่ถึงวันครบกำหนด
+                    statusBadge = `
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-md text-xs font-semibold flex items-center gap-1">
+                                    <i class="fa-regular fa-clock"></i> เหลืออีก ${calc.daysToDue} วัน ครบกำหนด
+                                </span>
+                                <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-md text-xs font-semibold">
+                                    เหลืออีก ${calc.daysToExpire} วัน หมดสัญญา
+                                </span>
+                            </div>
+                            <span class="text-xs text-gray-500">ดอกเบี้ย ฿${calc.interest.toFixed(2)}</span>
+                        </div>
+                    `;
                 }
 
                 const row = document.createElement('tr');
@@ -319,7 +374,12 @@
                     <td class="p-3 font-semibold">฿${parseFloat(r.principal).toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
                     <td class="p-3 text-amber-800 font-medium">${calc.rate}% / ${calc.termDays} วัน</td>
                     <td class="p-3 text-gray-500">${new Date(r.startDate).toLocaleDateString('th-TH')}</td>
-                    <td class="p-3 text-gray-500">${new Date(r.dueDate).toLocaleDateString('th-TH')}</td>
+                    <td class="p-3">
+                        <div class="text-xs">
+                            <div class="font-medium text-gray-700">ครบกำหนด: ${new Date(r.dueDate).toLocaleDateString('th-TH')}</div>
+                            <div class="text-gray-500">หมดสัญญา: ${calc.expireDate.toLocaleDateString('th-TH')}</div>
+                        </div>
+                    </td>
                     <td class="p-3">${statusBadge}</td>
                     <td class="p-3 text-center flex justify-center items-center gap-1 flex-wrap">
                         <button onclick="openEditModal(${r.id})" class="bg-amber-50 text-amber-700 hover:bg-amber-100 px-2 py-1 rounded-md text-xs font-medium transition flex items-center gap-1" title="แก้ไขข้อมูล">
@@ -350,6 +410,7 @@
             document.getElementById('pawn-form').reset();
             document.getElementById('interest-rate').value = "5";
             document.getElementById('term-days').value = "10";
+            document.getElementById('grace-days').value = "7";
             document.getElementById('start-date').valueAsDate = new Date();
             document.getElementById('new-pawn-modal').classList.remove('hidden');
         }
@@ -366,6 +427,7 @@
             const principal = parseFloat(document.getElementById('principal-amount').value);
             const interestRate = parseFloat(document.getElementById('interest-rate').value) || 5;
             const termDays = parseInt(document.getElementById('term-days').value) || 10;
+            const graceDays = parseInt(document.getElementById('grace-days').value) || 7;
             const startDateInput = document.getElementById('start-date').value;
 
             const startDate = startDateInput ? new Date(startDateInput) : new Date();
@@ -379,6 +441,7 @@
                 principal,
                 interestRate,
                 termDays,
+                graceDays,
                 startDate: startDate.toISOString(),
                 dueDate: dueDate.toISOString(),
                 status: 'กำลังจำนำ'
@@ -401,8 +464,8 @@
             document.getElementById('edit-principal').value = record.principal;
             document.getElementById('edit-interest-rate').value = record.interestRate !== undefined ? record.interestRate : 5;
             document.getElementById('edit-term-days').value = record.termDays !== undefined ? record.termDays : 10;
+            document.getElementById('edit-grace-days').value = record.graceDays !== undefined ? record.graceDays : 7;
             
-            // Format dates YYYY-MM-DD for date inputs
             document.getElementById('edit-start-date').value = new Date(record.startDate).toISOString().split('T')[0];
             document.getElementById('edit-due-date').value = new Date(record.dueDate).toISOString().split('T')[0];
             document.getElementById('edit-status').value = record.status;
@@ -425,6 +488,7 @@
             record.principal = parseFloat(document.getElementById('edit-principal').value);
             record.interestRate = parseFloat(document.getElementById('edit-interest-rate').value);
             record.termDays = parseInt(document.getElementById('edit-term-days').value);
+            record.graceDays = parseInt(document.getElementById('edit-grace-days').value);
             record.startDate = new Date(document.getElementById('edit-start-date').value).toISOString();
             record.dueDate = new Date(document.getElementById('edit-due-date').value).toISOString();
             record.status = document.getElementById('edit-status').value;

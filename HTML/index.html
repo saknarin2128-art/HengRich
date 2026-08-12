@@ -164,26 +164,25 @@
 
         document.getElementById('addStartDate').valueAsDate = new Date();
 
-        // ฟังก์ชันดึงข้อมูลจาก Cloud D1
         async function fetchPawns() {
             try {
                 const res = await fetch('/api/pawns');
                 if (res.ok) {
                     pawnRecords = await res.json();
-                    
-                    // หากฐานข้อมูลบนคลาวด์ยังว่างเปล่า ให้เริ่มระบบย้ายข้อมูลอัตโนมัติ
                     if (pawnRecords.length === 0) {
                         await migrateLocalToCloud();
                     } else {
                         renderTable();
                     }
+                } else {
+                    const errData = await res.json();
+                    alert(`เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: ${errData.error || 'ไม่สามารถโหลดข้อมูลได้'}`);
                 }
             } catch (err) {
                 console.error("Error fetching data:", err);
             }
         }
 
-        // ฟังก์ชันย้ายข้อมูลอัตโนมัติจาก localStorage ไปยัง Cloudflare D1
         async function migrateLocalToCloud() {
             const localData = localStorage.getItem('pawnRecords');
             if (localData) {
@@ -209,10 +208,7 @@
                                 body: JSON.stringify(payload)
                             });
                         }
-                        // เมื่อย้ายข้อมูลเสร็จแล้ว ลบ localStorage ทิ้งเพื่อป้องกันการย้ายซ้ำ
                         localStorage.removeItem('pawnRecords');
-                        
-                        // ดึงข้อมูลใหม่อีกครั้งหลังจากย้ายเสร็จ
                         const res = await fetch('/api/pawns');
                         pawnRecords = await res.json();
                     }
@@ -343,16 +339,21 @@
                 due_date: dueDate.toISOString().split('T')[0]
             };
 
-            await fetch('/api/pawns', {
+            const res = await fetch('/api/pawns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            closeModal('addModal');
-            document.getElementById('addForm').reset();
-            document.getElementById('addStartDate').valueAsDate = new Date();
-            fetchPawns();
+            if (res.ok) {
+                closeModal('addModal');
+                document.getElementById('addForm').reset();
+                document.getElementById('addStartDate').valueAsDate = new Date();
+                fetchPawns();
+            } else {
+                const errData = await res.json();
+                alert(`บันทึกไม่สำเร็จ: ${errData.error || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'}`);
+            }
         }
 
         async function handleExtend(id) {

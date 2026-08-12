@@ -164,14 +164,63 @@
 
         document.getElementById('addStartDate').valueAsDate = new Date();
 
+        // ฟังก์ชันดึงข้อมูลจาก Cloud D1
         async function fetchPawns() {
             try {
                 const res = await fetch('/api/pawns');
-                pawnRecords = await res.json();
-                renderTable();
+                if (res.ok) {
+                    pawnRecords = await res.json();
+                    
+                    // หากฐานข้อมูลบนคลาวด์ยังว่างเปล่า ให้เริ่มระบบย้ายข้อมูลอัตโนมัติ
+                    if (pawnRecords.length === 0) {
+                        await migrateLocalToCloud();
+                    } else {
+                        renderTable();
+                    }
+                }
             } catch (err) {
                 console.error("Error fetching data:", err);
             }
+        }
+
+        // ฟังก์ชันย้ายข้อมูลอัตโนมัติจาก localStorage ไปยัง Cloudflare D1
+        async function migrateLocalToCloud() {
+            const localData = localStorage.getItem('pawnRecords');
+            if (localData) {
+                try {
+                    const parsedLocal = JSON.parse(localData);
+                    if (parsedLocal && parsedLocal.length > 0) {
+                        for (const item of parsedLocal) {
+                            const payload = {
+                                customer_name: item.customerName || item.customer_name || 'ลูกค้าเก่า',
+                                phone: item.phone || '',
+                                item_name: item.itemName || item.item_name || 'ทรัพย์สิน',
+                                principal: parseFloat(item.principal || 0),
+                                interest_rate: parseFloat(item.interestRate || item.interest_rate || 5),
+                                contract_days: parseInt(item.contractDays || item.contract_days || 10),
+                                grace_days: parseInt(item.graceDays || item.grace_days || 7),
+                                start_date: item.startDate || item.start_date || new Date().toISOString().split('T')[0],
+                                due_date: item.dueDate || item.due_date || new Date().toISOString().split('T')[0]
+                            };
+                            
+                            await fetch('/api/pawns', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                        }
+                        // เมื่อย้ายข้อมูลเสร็จแล้ว ลบ localStorage ทิ้งเพื่อป้องกันการย้ายซ้ำ
+                        localStorage.removeItem('pawnRecords');
+                        
+                        // ดึงข้อมูลใหม่อีกครั้งหลังจากย้ายเสร็จ
+                        const res = await fetch('/api/pawns');
+                        pawnRecords = await res.json();
+                    }
+                } catch (e) {
+                    console.error("Migration error:", e);
+                }
+            }
+            renderTable();
         }
 
         function setFilter(filter) {

@@ -169,11 +169,7 @@
                 const res = await fetch('/api/pawns');
                 if (res.ok) {
                     pawnRecords = await res.json();
-                    if (pawnRecords.length === 0) {
-                        await migrateLocalToCloud();
-                    } else {
-                        renderTable();
-                    }
+                    renderTable();
                 } else {
                     const errData = await res.json();
                     alert(`เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: ${errData.error || 'ไม่สามารถโหลดข้อมูลได้'}`);
@@ -183,40 +179,17 @@
             }
         }
 
-        async function migrateLocalToCloud() {
-            const localData = localStorage.getItem('pawnRecords');
-            if (localData) {
-                try {
-                    const parsedLocal = JSON.parse(localData);
-                    if (parsedLocal && parsedLocal.length > 0) {
-                        for (const item of parsedLocal) {
-                            const payload = {
-                                customer_name: item.customerName || item.customer_name || 'ลูกค้าเก่า',
-                                phone: item.phone || '',
-                                item_name: item.itemName || item.item_name || 'ทรัพย์สิน',
-                                principal: parseFloat(item.principal || 0),
-                                interest_rate: parseFloat(item.interestRate || item.interest_rate || 5),
-                                contract_days: parseInt(item.contractDays || item.contract_days || 10),
-                                grace_days: parseInt(item.graceDays || item.grace_days || 7),
-                                start_date: item.startDate || item.start_date || new Date().toISOString().split('T')[0],
-                                due_date: item.dueDate || item.due_date || new Date().toISOString().split('T')[0]
-                            };
-                            
-                            await fetch('/api/pawns', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload)
-                            });
-                        }
-                        localStorage.removeItem('pawnRecords');
-                        const res = await fetch('/api/pawns');
-                        pawnRecords = await res.json();
-                    }
-                } catch (e) {
-                    console.error("Migration error:", e);
-                }
-            }
-            renderTable();
+        // ฟังก์ชันคำนวณจำนวนวันต่างระหว่างวันปัจจุบันกับวันเป้าหมายอย่างแม่นยำ
+        function calculateDaysDifference(targetDateStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const parts = targetDateStr.split('-');
+            const targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            targetDate.setHours(0, 0, 0, 0);
+
+            const diffInMs = targetDate.getTime() - today.getTime();
+            return Math.round(diffInMs / (1000 * 60 * 60 * 24));
         }
 
         function setFilter(filter) {
@@ -235,8 +208,6 @@
         function renderTable() {
             const tbody = document.getElementById('pawnTableBody');
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
 
             let filtered = pawnRecords.filter(r => {
                 const matchSearch = r.customer_name.toLowerCase().includes(search) || 
@@ -244,8 +215,8 @@
                                     (r.phone && r.phone.includes(search)) ||
                                     r.id.toString() === search;
                 
-                const dueDate = new Date(r.due_date);
-                const isOverdue = r.status === 'กำลังจำนำ' && dueDate < today;
+                const diffDaysDue = calculateDaysDifference(r.due_date);
+                const isOverdue = r.status === 'กำลังจำนำ' && diffDaysDue < 0;
 
                 if (currentFilter === 'active') return matchSearch && r.status === 'กำลังจำนำ';
                 if (currentFilter === 'overdue') return matchSearch && isOverdue;
@@ -256,7 +227,7 @@
             // Update Stats
             document.getElementById('statTotal').innerText = pawnRecords.length;
             document.getElementById('statActive').innerText = pawnRecords.filter(r => r.status === 'กำลังจำนำ').length;
-            document.getElementById('statOverdue').innerText = pawnRecords.filter(r => r.status === 'กำลังจำนำ' && new Date(r.due_date) < today).length;
+            document.getElementById('statOverdue').innerText = pawnRecords.filter(r => r.status === 'กำลังจำนำ' && calculateDaysDifference(r.due_date) < 0).length;
             const totalSum = pawnRecords.filter(r => r.status === 'กำลังจำนำ').reduce((acc, r) => acc + r.principal, 0);
             document.getElementById('statAmount').innerText = `฿${totalSum.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
 
@@ -266,18 +237,22 @@
             }
 
             tbody.innerHTML = filtered.map(r => {
-                const startDate = new Date(r.start_date);
-                const dueDate = new Date(r.due_date);
-                const expiryDate = new Date(dueDate);
-                expiryDate.setDate(expiryDate.getDate() + (r.grace_days || 7));
+                // คำนวณวันหมดสัญญา (วันครบกำหนด + ระยะผ่อนผัน)
+                const parts = r.due_date.split('-');
+                const expiryObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                expiryObj.setDate(expiryObj.getDate() + (r.grace_days || 7));
+                const expiryStr = `${expiryObj.getFullYear()}-${String(expiryObj.getMonth() + 1).padStart(2, '0')}-${String(expiryObj.getDate()).padStart(2, '0')}`;
 
-                const diffDaysDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-                const diffDaysExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                const diffDaysDue = calculateDaysDifference(r.due_date);
+                const diffDaysExpiry = calculateDaysDifference(expiryStr);
+
+                const dueDateDisplay = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('th-TH');
+                const expiryDateDisplay = expiryObj.toLocaleDateString('th-TH');
 
                 let statusBadge = '';
                 if (r.status === 'ไถ่ถอนแล้ว') {
                     statusBadge = `<span class="px-2.5 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">ไถ่ถอนแล้ว</span>`;
-                } else if (diffDaysExpiry <= 0) {
+                } else if (diffDaysExpiry < 0) {
                     statusBadge = `<span class="px-2.5 py-1 text-xs rounded-full bg-rose-100 text-rose-700 font-bold">หมดสัญญา (หลุดจำนำ)</span>`;
                 } else if (diffDaysDue < 0) {
                     statusBadge = `
@@ -304,8 +279,8 @@
                         <td class="p-4 font-bold text-slate-800">฿${r.principal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
                         <td class="p-4 text-xs text-slate-600">${r.interest_rate}% / ${r.contract_days} วัน</td>
                         <td class="p-4 text-xs">
-                            <div class="font-medium text-slate-700">ครบ: ${dueDate.toLocaleDateString('th-TH')}</div>
-                            <div class="text-slate-400">หมด: ${expiryDate.toLocaleDateString('th-TH')}</div>
+                            <div class="font-medium text-slate-700">ครบ: ${dueDateDisplay}</div>
+                            <div class="text-slate-400">หมด: ${expiryDateDisplay}</div>
                         </td>
                         <td class="p-4">${statusBadge}</td>
                         <td class="p-4 text-center space-x-1">
@@ -322,10 +297,11 @@
 
         async function handleAdd(e) {
             e.preventDefault();
-            const startDate = new Date(document.getElementById('addStartDate').value);
+            const startDateObj = new Date(document.getElementById('addStartDate').value);
             const contractDays = parseInt(document.getElementById('addContractDays').value);
-            const dueDate = new Date(startDate);
-            dueDate.setDate(dueDate.getDate() + contractDays);
+            
+            const dueDateObj = new Date(startDateObj);
+            dueDateObj.setDate(dueDateObj.getDate() + contractDays);
 
             const payload = {
                 customer_name: document.getElementById('addCustomer').value,
@@ -335,8 +311,8 @@
                 interest_rate: parseFloat(document.getElementById('addInterestRate').value),
                 contract_days: contractDays,
                 grace_days: parseInt(document.getElementById('addGraceDays').value),
-                start_date: startDate.toISOString().split('T')[0],
-                due_date: dueDate.toISOString().split('T')[0]
+                start_date: document.getElementById('addStartDate').value,
+                due_date: `${dueDateObj.getFullYear()}-${String(dueDateObj.getMonth() + 1).padStart(2, '0')}-${String(dueDateObj.getDate()).padStart(2, '0')}`
             };
 
             const res = await fetch('/api/pawns', {
@@ -360,11 +336,14 @@
             const record = pawnRecords.find(r => r.id === id);
             if (!record) return;
 
-            const currentDue = new Date(record.due_date);
+            const parts = record.due_date.split('-');
+            const currentDue = new Date(parts[0], parts[1] - 1, parts[2]);
             currentDue.setDate(currentDue.getDate() + record.contract_days);
 
+            const newDueDateStr = `${currentDue.getFullYear()}-${String(currentDue.getMonth() + 1).padStart(2, '0')}-${String(currentDue.getDate()).padStart(2, '0')}`;
+
             if (confirm(`ยืนยันการรับชำระต่อดอกเบี้ย? วันครบกำหนดใหม่จะเป็น: ${currentDue.toLocaleDateString('th-TH')}`)) {
-                record.due_date = currentDue.toISOString().split('T')[0];
+                record.due_date = newDueDateStr;
                 await fetch('/api/pawns', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },

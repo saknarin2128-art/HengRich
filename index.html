@@ -2,236 +2,228 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ระบบจัดการร้านรับจำนำ Cloud System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+        /* ซ่อน Scrollbar ส่วนเกินแต่ยังคงเลื่อนได้ */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="text-slate-800 pb-10">
 
-    <!-- Header Bar -->
-    <header class="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-store text-3xl"></i>
+    <!-- Header Bar (Mobile-Optimized) -->
+    <header class="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2.5 sm:space-x-3">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center text-white">
+                    <i class="fa-solid fa-store text-lg sm:text-xl"></i>
+                </div>
                 <div>
-                    <h1 class="text-xl font-bold">ระบบจัดการร้านรับจำนำ</h1>
-                    <p class="text-xs text-amber-100">HengRich Cloud D1 Connected</p>
+                    <h1 class="text-base sm:text-xl font-bold leading-tight">ระบบจัดการร้านรับจำนำ</h1>
+                    <p class="text-[10px] sm:text-xs text-amber-100">HengRich Cloud D1</p>
                 </div>
             </div>
-            <button onclick="openModal('addModal')" class="bg-white text-orange-600 hover:bg-orange-50 font-semibold px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
-                <i class="fa-solid fa-plus"></i> ฝากสินค้าใหม่
+            <button onclick="openModal('addModal')" class="bg-white text-orange-600 hover:bg-orange-50 font-semibold px-3 py-2 sm:px-4 sm:py-2 rounded-xl shadow-sm text-xs sm:text-sm transition flex items-center gap-1.5 active:scale-95">
+                <i class="fa-solid fa-plus text-sm"></i>
+                <span>ฝากสินค้าใหม่</span>
             </button>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <main class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+        <!-- Stats Cards Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <div class="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 uppercase">สัญญาทั้งหมด</p>
-                    <p id="statTotal" class="text-2xl font-bold text-slate-800">0</p>
+                    <p class="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase">สัญญาทั้งหมด</p>
+                    <p id="statTotal" class="text-lg sm:text-2xl font-bold text-slate-800 mt-0.5">0</p>
                 </div>
-                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs sm:text-base">
                     <i class="fa-solid fa-file-contract"></i>
                 </div>
             </div>
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+            <div class="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 uppercase">กำลังจำนำอยู่</p>
-                    <p id="statActive" class="text-2xl font-bold text-emerald-600">0</p>
+                    <p class="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase">กำลังจำนำอยู่</p>
+                    <p id="statActive" class="text-lg sm:text-2xl font-bold text-emerald-600 mt-0.5">0</p>
                 </div>
-                <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs sm:text-base">
                     <i class="fa-solid fa-box-archive"></i>
                 </div>
             </div>
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+            <div class="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 uppercase">เลยกำหนดชำระ</p>
-                    <p id="statOverdue" class="text-2xl font-bold text-rose-600">0</p>
+                    <p class="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase">เลยกำหนดชำระ</p>
+                    <p id="statOverdue" class="text-lg sm:text-2xl font-bold text-rose-600 mt-0.5">0</p>
                 </div>
-                <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-xs sm:text-base">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
             </div>
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+            <div class="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-slate-500 uppercase">ยอดเงินฝากรวม</p>
-                    <p id="statAmount" class="text-2xl font-bold text-orange-600">฿0.00</p>
+                    <p class="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase">ยอดเงินฝากรวม</p>
+                    <p id="statAmount" class="text-lg sm:text-2xl font-bold text-orange-600 mt-0.5">฿0.00</p>
                 </div>
-                <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center text-xs sm:text-base">
                     <i class="fa-solid fa-vault"></i>
                 </div>
             </div>
         </div>
 
         <!-- Filter & Search Bar -->
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 md:space-y-0 md:flex md:gap-4 md:justify-between md:items-center">
             <div class="relative w-full md:w-80">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
-                <input type="text" id="searchInput" oninput="renderTable()" placeholder="ค้นหาชื่อ, เบอร์โทร, สินค้า..." class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs sm:text-sm"></i>
+                <input type="text" id="searchInput" oninput="renderTable()" placeholder="ค้นหาชื่อ, เบอร์โทร, สินค้า..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50 focus:bg-white">
             </div>
-            <div class="flex gap-2 w-full md:w-auto overflow-x-auto">
-                <button onclick="setFilter('all')" id="filter-all" class="px-3 py-1.5 text-xs font-medium rounded-lg border bg-orange-500 text-white border-orange-500">ทั้งหมด</button>
-                <button onclick="setFilter('active')" id="filter-active" class="px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-slate-600 border-slate-300">กำลังจำนำ</button>
-                <button onclick="setFilter('overdue')" id="filter-overdue" class="px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-slate-600 border-slate-300">เลยกำหนด</button>
-                <button onclick="setFilter('redeemed')" id="filter-redeemed" class="px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-slate-600 border-slate-300">ไถ่ถอนแล้ว</button>
+            <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+                <button onclick="setFilter('all')" id="filter-all" class="whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-lg border bg-orange-500 text-white border-orange-500">ทั้งหมด</button>
+                <button onclick="setFilter('active')" id="filter-active" class="whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-slate-600 border-slate-200">กำลังจำนำ</button>
+                <button onclick="setFilter('overdue')" id="filter-overdue" class="whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-slate-600 border-slate-200">เลยกำหนด</button>
+                <button onclick="setFilter('redeemed')" id="filter-redeemed" class="whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-slate-600 border-slate-200">ไถ่ถอนแล้ว</button>
             </div>
         </div>
 
-        <!-- Main Table -->
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-                            <th class="p-4">ID</th>
-                            <th class="p-4">ข้อมูลลูกค้า</th>
-                            <th class="p-4">รายการสินค้า</th>
-                            <th class="p-4">เงินต้น</th>
-                            <th class="p-4">เงื่อนไข</th>
-                            <th class="p-4">กำหนดชำระ / หมดสัญญา</th>
-                            <th class="p-4">นับถอยหลัง / สถานะ & ค่าปรับ</th>
-                            <th class="p-4 text-center">จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pawnTableBody" class="divide-y divide-slate-100">
-                        <tr><td colspan="8" class="text-center p-8 text-slate-400">กำลังโหลดข้อมูลจากคลาวด์...</td></tr>
-                    </tbody>
-                </table>
+        <!-- Container แสดงผล (Mobile Cards & Desktop Table) -->
+        <div id="pawnContainer">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center text-slate-400 text-xs sm:text-sm">
+                กำลังโหลดข้อมูลจากคลาวด์...
             </div>
         </div>
     </main>
 
-    <!-- Modal 1: ฝากสินค้าใหม่ -->
-    <div id="addModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
-            <h2 class="text-lg font-bold text-slate-800">ทำรายการฝากสินค้าใหม่</h2>
+    <!-- Modal 1: ฝากสินค้าใหม่ (Mobile Bottom Sheet Style) -->
+    <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+        <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h2 class="text-base sm:text-lg font-bold text-slate-800">ทำรายการฝากสินค้าใหม่</h2>
+                <button onclick="closeModal('addModal')" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
             <form id="addForm" onsubmit="handleAdd(event)" class="space-y-3">
                 <div>
                     <label class="text-xs font-medium text-slate-600">ชื่อลูกค้า *</label>
-                    <input type="text" id="addCustomer" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="text" id="addCustomer" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
                     <label class="text-xs font-medium text-slate-600">เบอร์โทรศัพท์</label>
-                    <input type="text" id="addPhone" placeholder="08X-XXX-XXXX" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="tel" id="addPhone" placeholder="08X-XXX-XXXX" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
                     <label class="text-xs font-medium text-slate-600">รายการสินค้า/ทรัพย์สิน *</label>
-                    <input type="text" id="addItem" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="text" id="addItem" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-xs font-medium text-slate-600">จำนวนเงินต้น (บาท) *</label>
-                        <input type="number" id="addPrincipal" required min="1" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <label class="text-xs font-medium text-slate-600">เงินต้น (บาท) *</label>
+                        <input type="number" id="addPrincipal" required min="1" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                     <div>
                         <label class="text-xs font-medium text-slate-600">ดอกเบี้ย (%) *</label>
-                        <input type="number" id="addInterestRate" step="0.1" value="5" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <input type="number" id="addInterestRate" step="0.1" value="5" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-xs font-medium text-slate-600">รอบสัญญา (วัน) *</label>
-                        <input type="number" id="addContractDays" value="10" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <input type="number" id="addContractDays" value="10" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                     <div>
-                        <label class="text-xs font-medium text-slate-600">ระยะผ่อนผัน (วัน)</label>
-                        <input type="number" id="addGraceDays" value="7" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <label class="text-xs font-medium text-slate-600">ผ่อนผัน (วัน)</label>
+                        <input type="number" id="addGraceDays" value="7" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                 </div>
                 <div>
                     <label class="text-xs font-medium text-slate-600">วันที่ฝาก *</label>
-                    <input type="date" id="addStartDate" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="date" id="addStartDate" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                 </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModal('addModal')" class="px-4 py-2 text-sm bg-slate-100 text-slate-600 rounded-lg">ยกเลิก</button>
-                    <button type="submit" class="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg font-medium">บันทึกข้อมูล</button>
+                <div class="flex justify-end gap-2 pt-3 border-t">
+                    <button type="button" onclick="closeModal('addModal')" class="w-full sm:w-auto px-4 py-2.5 text-sm bg-slate-100 text-slate-600 rounded-xl font-medium">ยกเลิก</button>
+                    <button type="submit" class="w-full sm:w-auto px-5 py-2.5 text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium shadow-sm">บันทึกข้อมูล</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal 2: แก้ไขข้อมูลสัญญา/ลูกค้า -->
-    <div id="editModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+    <!-- Modal 2: แก้ไขข้อมูลสัญญา -->
+    <div id="editModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+        <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b pb-3">
-                <h2 class="text-lg font-bold text-slate-800">แก้ไขข้อมูลสัญญา <span id="editDisplayId" class="text-orange-600"></span></h2>
-                <button onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <h2 class="text-base sm:text-lg font-bold text-slate-800">แก้ไขข้อมูลสัญญา <span id="editDisplayId" class="text-orange-600"></span></h2>
+                <button onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <form id="editForm" onsubmit="handleSaveEdit(event)" class="space-y-3">
                 <input type="hidden" id="editId">
                 <div>
                     <label class="text-xs font-medium text-slate-600">ชื่อลูกค้า *</label>
-                    <input type="text" id="editCustomer" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="text" id="editCustomer" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
                     <label class="text-xs font-medium text-slate-600">เบอร์โทรศัพท์</label>
-                    <input type="text" id="editPhone" placeholder="08X-XXX-XXXX" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="tel" id="editPhone" placeholder="08X-XXX-XXXX" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
                     <label class="text-xs font-medium text-slate-600">รายการสินค้า/ทรัพย์สิน *</label>
-                    <input type="text" id="editItem" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    <input type="text" id="editItem" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-xs font-medium text-slate-600">จำนวนเงินต้น (บาท) *</label>
-                        <input type="number" id="editPrincipal" required min="1" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <label class="text-xs font-medium text-slate-600">เงินต้น (บาท) *</label>
+                        <input type="number" id="editPrincipal" required min="1" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                     <div>
                         <label class="text-xs font-medium text-slate-600">ดอกเบี้ย (%) *</label>
-                        <input type="number" id="editInterestRate" step="0.1" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <input type="number" id="editInterestRate" step="0.1" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-xs font-medium text-slate-600">รอบสัญญา (วัน) *</label>
-                        <input type="number" id="editContractDays" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <input type="number" id="editContractDays" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                     <div>
-                        <label class="text-xs font-medium text-slate-600">ระยะผ่อนผัน (วัน)</label>
-                        <input type="number" id="editGraceDays" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <label class="text-xs font-medium text-slate-600">ผ่อนผัน (วัน)</label>
+                        <input type="number" id="editGraceDays" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-xs font-medium text-slate-600">วันที่ฝาก *</label>
-                        <input type="date" id="editStartDate" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <input type="date" id="editStartDate" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                     <div>
                         <label class="text-xs font-medium text-slate-600">วันครบกำหนด *</label>
-                        <input type="date" id="editDueDate" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <input type="date" id="editDueDate" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                     </div>
                 </div>
                 <div>
                     <label class="text-xs font-medium text-slate-600">สถานะสัญญา</label>
-                    <select id="editStatus" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    <select id="editStatus" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
                         <option value="กำลังจำนำ">กำลังจำนำ</option>
                         <option value="ไถ่ถอนแล้ว">ไถ่ถอนแล้ว</option>
                     </select>
                 </div>
                 <div class="flex justify-end gap-2 pt-3 border-t">
-                    <button type="button" onclick="closeModal('editModal')" class="px-4 py-2 text-sm bg-slate-100 text-slate-600 rounded-lg">ยกเลิก</button>
-                    <button type="submit" class="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium">บันทึกการแก้ไข</button>
+                    <button type="button" onclick="closeModal('editModal')" class="w-full sm:w-auto px-4 py-2.5 text-sm bg-slate-100 text-slate-600 rounded-xl font-medium">ยกเลิก</button>
+                    <button type="submit" class="w-full sm:w-auto px-5 py-2.5 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-medium shadow-sm">บันทึกการแก้ไข</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Script สำหรับควบคุมการทำงานผ่าน API -->
+    <!-- Script ควบคุมระบบ -->
     <script>
         let pawnRecords = [];
         let currentFilter = 'all';
 
         document.getElementById('addStartDate').valueAsDate = new Date();
 
-        // 1. ดึงข้อมูลจาก D1 Database ผ่าน API
         async function fetchPawns() {
             try {
                 const res = await fetch('/api/pawns');
@@ -247,7 +239,6 @@
             }
         }
 
-        // 2. คำนวณความต่างของจำนวนวันอย่างแม่นยำ
         function calculateDaysDifference(targetDateStr) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -260,7 +251,6 @@
             return Math.round(diffInMs / (1000 * 60 * 60 * 24));
         }
 
-        // 3. ฟังก์ชันคำนวณค่าปรับ 1% ต่อวันเมื่อเลยกำหนด
         function calculateFine(principal, dueDateStr) {
             const diffDaysDue = calculateDaysDifference(dueDateStr);
             if (diffDaysDue < 0) {
@@ -277,17 +267,16 @@
             ['all', 'active', 'overdue', 'redeemed'].forEach(f => {
                 const btn = document.getElementById(`filter-${f}`);
                 if (f === filter) {
-                    btn.className = "px-3 py-1.5 text-xs font-medium rounded-lg border bg-orange-500 text-white border-orange-500";
+                    btn.className = "whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-lg border bg-orange-500 text-white border-orange-500 shadow-sm";
                 } else {
-                    btn.className = "px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-slate-600 border-slate-300";
+                    btn.className = "whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-lg border bg-white text-slate-600 border-slate-200";
                 }
             });
             renderTable();
         }
 
-        // 4. แสดงผลตารางรายการสัญญา
         function renderTable() {
-            const tbody = document.getElementById('pawnTableBody');
+            const container = document.getElementById('pawnContainer');
             const search = document.getElementById('searchInput').value.toLowerCase();
 
             let filtered = pawnRecords.filter(r => {
@@ -305,7 +294,7 @@
                 return matchSearch;
             });
 
-            // Update สถิติด้านบน
+            // อัปเดตสถิติด้านบน
             document.getElementById('statTotal').innerText = pawnRecords.length;
             document.getElementById('statActive').innerText = pawnRecords.filter(r => r.status === 'กำลังจำนำ').length;
             document.getElementById('statOverdue').innerText = pawnRecords.filter(r => r.status === 'กำลังจำนำ' && calculateDaysDifference(r.due_date) < 0).length;
@@ -313,79 +302,176 @@
             document.getElementById('statAmount').innerText = `฿${totalSum.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-slate-400">ไม่พบรายการสัญญา</td></tr>`;
+                container.innerHTML = `<div class="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 text-xs sm:text-sm">ไม่พบรายการสัญญา</div>`;
                 return;
             }
 
-            tbody.innerHTML = filtered.map(r => {
-                const parts = r.due_date.split('-');
-                const expiryObj = new Date(parts[0], parts[1] - 1, parts[2]);
-                expiryObj.setDate(expiryObj.getDate() + (r.grace_days || 7));
-                const expiryStr = `${expiryObj.getFullYear()}-${String(expiryObj.getMonth() + 1).padStart(2, '0')}-${String(expiryObj.getDate()).padStart(2, '0')}`;
+            // HTML สำหรับ Mobile Cards View (< md Screen)
+            const mobileCardsHtml = `
+                <div class="block md:hidden space-y-3">
+                    ${filtered.map(r => {
+                        const parts = r.due_date.split('-');
+                        const expiryObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                        expiryObj.setDate(expiryObj.getDate() + (r.grace_days || 7));
+                        const expiryStr = `${expiryObj.getFullYear()}-${String(expiryObj.getMonth() + 1).padStart(2, '0')}-${String(expiryObj.getDate()).padStart(2, '0')}`;
 
-                const diffDaysDue = calculateDaysDifference(r.due_date);
-                const diffDaysExpiry = calculateDaysDifference(expiryStr);
+                        const diffDaysDue = calculateDaysDifference(r.due_date);
+                        const diffDaysExpiry = calculateDaysDifference(expiryStr);
 
-                const dueDateDisplay = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('th-TH');
-                const expiryDateDisplay = expiryObj.toLocaleDateString('th-TH');
+                        const dueDateDisplay = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('th-TH');
+                        const expiryDateDisplay = expiryObj.toLocaleDateString('th-TH');
 
-                // คำนวณดอกเบี้ยปกติ และ ค่าปรับ
-                const normalInterest = r.principal * (r.interest_rate / 100);
-                const fineData = calculateFine(r.principal, r.due_date);
+                        const normalInterest = r.principal * (r.interest_rate / 100);
+                        const fineData = calculateFine(r.principal, r.due_date);
 
-                let statusBadge = '';
-                if (r.status === 'ไถ่ถอนแล้ว') {
-                    statusBadge = `<span class="px-2.5 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">ไถ่ถอนแล้ว</span>`;
-                } else if (diffDaysExpiry < 0) {
-                    statusBadge = `<span class="px-2.5 py-1 text-xs rounded-full bg-rose-100 text-rose-700 font-bold">หมดสัญญา (หลุดจำนำ)</span>`;
-                } else if (diffDaysDue < 0) {
-                    statusBadge = `
-                        <div class="space-y-1">
-                            <span class="px-2 py-0.5 text-xs rounded-md bg-rose-100 text-rose-700 font-bold block">
-                                เลยกำหนด ${fineData.overdueDays} วัน (ค่าปรับ ฿${fineData.totalFine.toLocaleString('th-TH', {minimumFractionDigits: 2})})
-                            </span>
-                            <span class="text-xs text-amber-600 font-medium block">เหลืออีก ${diffDaysExpiry} วันหมดสัญญา</span>
-                        </div>`;
-                } else {
-                    statusBadge = `
-                        <div class="space-y-1">
-                            <span class="px-2 py-0.5 text-xs rounded-md bg-emerald-100 text-emerald-800 font-medium block">⏳ เหลืออีก ${diffDaysDue} วันครบกำหนด</span>
-                            <span class="text-xs text-slate-500 block">เหลืออีก ${diffDaysExpiry} วันหมดสัญญา</span>
-                        </div>`;
-                }
+                        let statusBadge = '';
+                        if (r.status === 'ไถ่ถอนแล้ว') {
+                            statusBadge = `<span class="px-2 py-0.5 text-[11px] rounded-full bg-slate-100 text-slate-600 font-medium">ไถ่ถอนแล้ว</span>`;
+                        } else if (diffDaysExpiry < 0) {
+                            statusBadge = `<span class="px-2 py-0.5 text-[11px] rounded-full bg-rose-100 text-rose-700 font-bold">หมดสัญญา (หลุดจำนำ)</span>`;
+                        } else if (diffDaysDue < 0) {
+                            statusBadge = `<span class="px-2 py-0.5 text-[11px] rounded-full bg-rose-100 text-rose-700 font-bold">เลยกำหนด ${fineData.overdueDays} วัน (ค่าปรับ ฿${fineData.totalFine.toLocaleString('th-TH', {minimumFractionDigits:2})})</span>`;
+                        } else {
+                            statusBadge = `<span class="px-2 py-0.5 text-[11px] rounded-full bg-emerald-100 text-emerald-800 font-medium">⏳ เหลืออีก ${diffDaysDue} วัน</span>`;
+                        }
 
-                return `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-4 font-bold text-orange-600">#${r.id}</td>
-                        <td class="p-4">
-                            <div class="font-medium text-slate-800">${r.customer_name}</div>
-                            <div class="text-xs text-slate-400">${r.phone || '-'}</div>
-                        </td>
-                        <td class="p-4 font-medium text-slate-700">${r.item_name}</td>
-                        <td class="p-4 font-bold text-slate-800">฿${r.principal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
-                        <td class="p-4 text-xs text-slate-600">
-                            <div>${r.interest_rate}% / ${r.contract_days} วัน</div>
-                            <div class="text-slate-400">ดอกเบี้ย: ฿${normalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                        </td>
-                        <td class="p-4 text-xs">
-                            <div class="font-medium text-slate-700">ครบ: ${dueDateDisplay}</div>
-                            <div class="text-slate-400">หมด: ${expiryDateDisplay}</div>
-                        </td>
-                        <td class="p-4">${statusBadge}</td>
-                        <td class="p-4 text-center space-x-1">
-                            <button onclick="openEditModal(${r.id})" class="px-2 py-1 text-xs bg-amber-50 text-amber-600 rounded hover:bg-amber-100 font-medium"><i class="fa-solid fa-pen"></i> แก้ไข</button>
-                            ${r.status === 'กำลังจำนำ' ? `
-                                <button onclick="handleExtend(${r.id})" class="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 font-medium">ต่อดอก</button>
-                                <button onclick="handleRedeem(${r.id})" class="px-2 py-1 text-xs bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 font-medium">ไถ่ถอน</button>
-                            ` : ''}
-                            <button onclick="handleDelete(${r.id})" class="px-2 py-1 text-xs bg-rose-50 text-rose-600 rounded hover:bg-rose-100"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+                        return `
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                                <div class="flex justify-between items-start border-b border-slate-100 pb-2.5">
+                                    <div>
+                                        <span class="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">#${r.id}</span>
+                                        <h3 class="font-bold text-slate-800 text-sm mt-1">${r.customer_name}</h3>
+                                        <p class="text-xs text-slate-400">${r.phone || 'ไม่มีเบอร์โทร'}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        ${statusBadge}
+                                        <p class="text-xs text-slate-400 mt-1">หมด: ${expiryDateDisplay}</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-lg">
+                                    <div>
+                                        <span class="text-slate-400 block">สินค้า/ทรัพย์สิน</span>
+                                        <span class="font-semibold text-slate-700">${r.item_name}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400 block">เงินต้น</span>
+                                        <span class="font-bold text-orange-600 text-sm">฿${r.principal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400 block">เงื่อนไข</span>
+                                        <span class="text-slate-600">${r.interest_rate}% / ${r.contract_days} วัน</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400 block">ดอกเบี้ยปกติ</span>
+                                        <span class="text-slate-600">฿${normalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1.5 pt-1">
+                                    <button onclick="openEditModal(${r.id})" class="flex-1 py-2 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium active:bg-amber-100">แก้ไข</button>
+                                    ${r.status === 'กำลังจำนำ' ? `
+                                        <button onclick="handleExtend(${r.id})" class="flex-1 py-2 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-medium active:bg-blue-100">ต่อดอก</button>
+                                        <button onclick="handleRedeem(${r.id})" class="flex-1 py-2 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-medium active:bg-emerald-100">ไถ่ถอน</button>
+                                    ` : ''}
+                                    <button onclick="handleDelete(${r.id})" class="px-3 py-2 text-xs bg-rose-50 text-rose-600 border border-rose-200 rounded-lg active:bg-rose-100"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            // HTML สำหรับ Desktop Table View (>= md Screen)
+            const desktopTableHtml = `
+                <div class="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                                    <th class="p-4">ID</th>
+                                    <th class="p-4">ข้อมูลลูกค้า</th>
+                                    <th class="p-4">รายการสินค้า</th>
+                                    <th class="p-4">เงินต้น</th>
+                                    <th class="p-4">เงื่อนไข</th>
+                                    <th class="p-4">กำหนดชำระ / หมดสัญญา</th>
+                                    <th class="p-4">นับถอยหลัง / สถานะ & ค่าปรับ</th>
+                                    <th class="p-4 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${filtered.map(r => {
+                                    const parts = r.due_date.split('-');
+                                    const expiryObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                                    expiryObj.setDate(expiryObj.getDate() + (r.grace_days || 7));
+                                    const expiryStr = `${expiryObj.getFullYear()}-${String(expiryObj.getMonth() + 1).padStart(2, '0')}-${String(expiryObj.getDate()).padStart(2, '0')}`;
+
+                                    const diffDaysDue = calculateDaysDifference(r.due_date);
+                                    const diffDaysExpiry = calculateDaysDifference(expiryStr);
+
+                                    const dueDateDisplay = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('th-TH');
+                                    const expiryDateDisplay = expiryObj.toLocaleDateString('th-TH');
+
+                                    const normalInterest = r.principal * (r.interest_rate / 100);
+                                    const fineData = calculateFine(r.principal, r.due_date);
+
+                                    let statusBadge = '';
+                                    if (r.status === 'ไถ่ถอนแล้ว') {
+                                        statusBadge = `<span class="px-2.5 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">ไถ่ถอนแล้ว</span>`;
+                                    } else if (diffDaysExpiry < 0) {
+                                        statusBadge = `<span class="px-2.5 py-1 text-xs rounded-full bg-rose-100 text-rose-700 font-bold">หมดสัญญา (หลุดจำนำ)</span>`;
+                                    } else if (diffDaysDue < 0) {
+                                        statusBadge = `
+                                            <div class="space-y-1">
+                                                <span class="px-2 py-0.5 text-xs rounded-md bg-rose-100 text-rose-700 font-bold block">
+                                                    เลยกำหนด ${fineData.overdueDays} วัน (ค่าปรับ ฿${fineData.totalFine.toLocaleString('th-TH', {minimumFractionDigits: 2})})
+                                                </span>
+                                                <span class="text-xs text-amber-600 font-medium block">เหลืออีก ${diffDaysExpiry} วันหมดสัญญา</span>
+                                            </div>`;
+                                    } else {
+                                        statusBadge = `
+                                            <div class="space-y-1">
+                                                <span class="px-2 py-0.5 text-xs rounded-md bg-emerald-100 text-emerald-800 font-medium block">⏳ เหลืออีก ${diffDaysDue} วันครบกำหนด</span>
+                                                <span class="text-xs text-slate-500 block">เหลืออีก ${diffDaysExpiry} วันหมดสัญญา</span>
+                                            </div>`;
+                                    }
+
+                                    return `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-4 font-bold text-orange-600">#${r.id}</td>
+                                            <td class="p-4">
+                                                <div class="font-medium text-slate-800">${r.customer_name}</div>
+                                                <div class="text-xs text-slate-400">${r.phone || '-'}</div>
+                                            </td>
+                                            <td class="p-4 font-medium text-slate-700">${r.item_name}</td>
+                                            <td class="p-4 font-bold text-slate-800">฿${r.principal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+                                            <td class="p-4 text-xs text-slate-600">
+                                                <div>${r.interest_rate}% / ${r.contract_days} วัน</div>
+                                                <div class="text-slate-400">ดอกเบี้ย: ฿${normalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                                            </td>
+                                            <td class="p-4 text-xs">
+                                                <div class="font-medium text-slate-700">ครบ: ${dueDateDisplay}</div>
+                                                <div class="text-slate-400">หมด: ${expiryDateDisplay}</div>
+                                            </td>
+                                            <td class="p-4">${statusBadge}</td>
+                                            <td class="p-4 text-center space-x-1">
+                                                <button onclick="openEditModal(${r.id})" class="px-2 py-1 text-xs bg-amber-50 text-amber-600 rounded hover:bg-amber-100 font-medium"><i class="fa-solid fa-pen"></i> แก้ไข</button>
+                                                ${r.status === 'กำลังจำนำ' ? `
+                                                    <button onclick="handleExtend(${r.id})" class="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 font-medium">ต่อดอก</button>
+                                                    <button onclick="handleRedeem(${r.id})" class="px-2 py-1 text-xs bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 font-medium">ไถ่ถอน</button>
+                                                ` : ''}
+                                                <button onclick="handleDelete(${r.id})" class="px-2 py-1 text-xs bg-rose-50 text-rose-600 rounded hover:bg-rose-100"><i class="fa-solid fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = mobileCardsHtml + desktopTableHtml;
         }
 
-        // 5. เปิด Modal แก้ไขข้อมูล
         function openEditModal(id) {
             const record = pawnRecords.find(r => r.id === id);
             if (!record) return;
@@ -406,7 +492,6 @@
             openModal('editModal');
         }
 
-        // 6. ส่งข้อมูลการแก้ไขผ่าน API (PUT)
         async function handleSaveEdit(e) {
             e.preventDefault();
 
@@ -439,7 +524,6 @@
             }
         }
 
-        // 7. ฟังก์ชันบันทึกสัญญาใหม่ (POST)
         async function handleAdd(e) {
             e.preventDefault();
             const startDateObj = new Date(document.getElementById('addStartDate').value);
@@ -477,7 +561,6 @@
             }
         }
 
-        // 8. ฟังก์ชันต่อดอกเบี้ย (คำนวณรวมดอกเบี้ยปกติ + ค่าปรับเลยกำหนด)
         async function handleExtend(id) {
             const record = pawnRecords.find(r => r.id === id);
             if (!record) return;
@@ -511,7 +594,6 @@
             }
         }
 
-        // 9. ฟังก์ชันไถ่ถอน
         async function handleRedeem(id) {
             const record = pawnRecords.find(r => r.id === id);
             if (!record) return;
@@ -539,7 +621,6 @@
             }
         }
 
-        // 10. ฟังก์ชันลบสัญญา
         async function handleDelete(id) {
             if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบสัญญา #${id}?`)) {
                 await fetch(`/api/pawns?id=${id}`, { method: 'DELETE' });

@@ -1,18 +1,25 @@
-// โค้ด API /api/pawns พร้อมระบบจัดการ Error ให้ปลอดภัยยิ่งขึ้น
+// ==========================================
+// API Handling for Pawnshop Application
+// File Path: functions/api/pawns.js
+// ==========================================
+
 export async function onRequest(context) {
     const { request, env } = context;
     const method = request.method;
 
-    // ตรวจสอบว่ามี Binding DB หรือไม่
+    // ตรวจสอบว่า Binding ตัวแปร DB ถูกต้องหรือไม่
     if (!env.DB) {
-        return new Response(JSON.stringify({ error: "D1 Binding 'DB' not found" }), {
+        return new Response(JSON.stringify({ 
+            success: false, 
+            error: "D1 Database Binding 'DB' is missing. Please check Cloudflare Settings." 
+        }), {
             status: 500,
             headers: { "Content-Type": "application/json" }
         });
     }
 
     try {
-        // 1. ดึงรายการสัญญาทั้งหมด (GET)
+        // 1. HTTP GET: ดึงสัญญาทั้งหมดเรียงจากรายการล่าสุด
         if (method === "GET") {
             const { results } = await env.DB.prepare("SELECT * FROM pawns ORDER BY id DESC").all();
             return new Response(JSON.stringify(results || []), {
@@ -20,7 +27,7 @@ export async function onRequest(context) {
             });
         }
 
-        // 2. สร้างสัญญาใหม่ (POST)
+        // 2. HTTP POST: เพิ่มสัญญาฝากสินค้าใหม่
         if (method === "POST") {
             const data = await request.json();
             const { customer_name, phone, item_name, principal, interest_rate, contract_days, start_date, due_date, grace_days } = data;
@@ -45,7 +52,7 @@ export async function onRequest(context) {
             });
         }
 
-        // 3. แก้ไขข้อมูลสัญญา / ต่อดอก / ไถ่ถอน (PUT)
+        // 3. HTTP PUT: อัปเดตข้อมูลสัญญา / ต่อดอกเบี้ย / ไถ่ถอน
         if (method === "PUT") {
             const data = await request.json();
             const { id, customer_name, phone, item_name, principal, interest_rate, contract_days, start_date, due_date, grace_days, status } = data;
@@ -73,7 +80,7 @@ export async function onRequest(context) {
             });
         }
 
-        // 4. ลบสัญญา (DELETE)
+        // 4. HTTP DELETE: ลบสัญญา
         if (method === "DELETE") {
             const url = new URL(request.url);
             const id = url.searchParams.get("id");
@@ -85,11 +92,10 @@ export async function onRequest(context) {
             });
         }
 
-        return new Response("Method not allowed", { status: 405 });
+        return new Response("Method Not Allowed", { status: 405 });
 
-    } catch (err) {
-        // หากเกิดข้อผิดพลาด ให้ส่งรายละเอียดกลับมาเพื่อตรวจสอบง่ายขึ้น
-        return new Response(JSON.stringify({ error: err.message }), {
+    } catch (error) {
+        return new Response(JSON.stringify({ success: false, error: error.message }), {
             status: 500,
             headers: { "Content-Type": "application/json" }
         });

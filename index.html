@@ -97,7 +97,7 @@
                             <th class="p-4">เงินต้น</th>
                             <th class="p-4">เงื่อนไข</th>
                             <th class="p-4">กำหนดชำระ / หมดสัญญา</th>
-                            <th class="p-4">นับถอยหลัง / สถานะ</th>
+                            <th class="p-4">นับถอยหลัง / สถานะ & ค่าปรับ</th>
                             <th class="p-4 text-center">จัดการ</th>
                         </tr>
                     </thead>
@@ -109,7 +109,7 @@
         </div>
     </main>
 
-    <!-- Modal ฝากสินค้าใหม่ -->
+    <!-- Modal 1: ฝากสินค้าใหม่ -->
     <div id="addModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
             <h2 class="text-lg font-bold text-slate-800">ทำรายการฝากสินค้าใหม่</h2>
@@ -158,12 +158,80 @@
         </div>
     </div>
 
+    <!-- Modal 2: แก้ไขข้อมูลสัญญา/ลูกค้า -->
+    <div id="editModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h2 class="text-lg font-bold text-slate-800">แก้ไขข้อมูลสัญญา <span id="editDisplayId" class="text-orange-600"></span></h2>
+                <button onclick="closeModal('editModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="editForm" onsubmit="handleSaveEdit(event)" class="space-y-3">
+                <input type="hidden" id="editId">
+                <div>
+                    <label class="text-xs font-medium text-slate-600">ชื่อลูกค้า *</label>
+                    <input type="text" id="editCustomer" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600">เบอร์โทรศัพท์</label>
+                    <input type="text" id="editPhone" placeholder="08X-XXX-XXXX" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600">รายการสินค้า/ทรัพย์สิน *</label>
+                    <input type="text" id="editItem" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">จำนวนเงินต้น (บาท) *</label>
+                        <input type="number" id="editPrincipal" required min="1" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">ดอกเบี้ย (%) *</label>
+                        <input type="number" id="editInterestRate" step="0.1" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">รอบสัญญา (วัน) *</label>
+                        <input type="number" id="editContractDays" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">ระยะผ่อนผัน (วัน)</label>
+                        <input type="number" id="editGraceDays" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">วันที่ฝาก *</label>
+                        <input type="date" id="editStartDate" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">วันครบกำหนด *</label>
+                        <input type="date" id="editDueDate" required class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600">สถานะสัญญา</label>
+                    <select id="editStatus" class="w-full p-2 border border-slate-300 rounded-lg text-sm">
+                        <option value="กำลังจำนำ">กำลังจำนำ</option>
+                        <option value="ไถ่ถอนแล้ว">ไถ่ถอนแล้ว</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t">
+                    <button type="button" onclick="closeModal('editModal')" class="px-4 py-2 text-sm bg-slate-100 text-slate-600 rounded-lg">ยกเลิก</button>
+                    <button type="submit" class="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium">บันทึกการแก้ไข</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script สำหรับควบคุมการทำงานผ่าน API -->
     <script>
         let pawnRecords = [];
         let currentFilter = 'all';
 
         document.getElementById('addStartDate').valueAsDate = new Date();
 
+        // 1. ดึงข้อมูลจาก D1 Database ผ่าน API
         async function fetchPawns() {
             try {
                 const res = await fetch('/api/pawns');
@@ -179,7 +247,7 @@
             }
         }
 
-        // ฟังก์ชันคำนวณจำนวนวันต่างระหว่างวันปัจจุบันกับวันเป้าหมายอย่างแม่นยำ
+        // 2. คำนวณความต่างของจำนวนวันอย่างแม่นยำ
         function calculateDaysDifference(targetDateStr) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -190,6 +258,18 @@
 
             const diffInMs = targetDate.getTime() - today.getTime();
             return Math.round(diffInMs / (1000 * 60 * 60 * 24));
+        }
+
+        // 3. ฟังก์ชันคำนวณค่าปรับ 1% ต่อวันเมื่อเลยกำหนด
+        function calculateFine(principal, dueDateStr) {
+            const diffDaysDue = calculateDaysDifference(dueDateStr);
+            if (diffDaysDue < 0) {
+                const overdueDays = Math.abs(diffDaysDue);
+                const finePerDay = principal * 0.01;
+                const totalFine = overdueDays * finePerDay;
+                return { overdueDays, finePerDay, totalFine };
+            }
+            return { overdueDays: 0, finePerDay: 0, totalFine: 0 };
         }
 
         function setFilter(filter) {
@@ -205,6 +285,7 @@
             renderTable();
         }
 
+        // 4. แสดงผลตารางรายการสัญญา
         function renderTable() {
             const tbody = document.getElementById('pawnTableBody');
             const search = document.getElementById('searchInput').value.toLowerCase();
@@ -224,7 +305,7 @@
                 return matchSearch;
             });
 
-            // Update Stats
+            // Update สถิติด้านบน
             document.getElementById('statTotal').innerText = pawnRecords.length;
             document.getElementById('statActive').innerText = pawnRecords.filter(r => r.status === 'กำลังจำนำ').length;
             document.getElementById('statOverdue').innerText = pawnRecords.filter(r => r.status === 'กำลังจำนำ' && calculateDaysDifference(r.due_date) < 0).length;
@@ -237,7 +318,6 @@
             }
 
             tbody.innerHTML = filtered.map(r => {
-                // คำนวณวันหมดสัญญา (วันครบกำหนด + ระยะผ่อนผัน)
                 const parts = r.due_date.split('-');
                 const expiryObj = new Date(parts[0], parts[1] - 1, parts[2]);
                 expiryObj.setDate(expiryObj.getDate() + (r.grace_days || 7));
@@ -249,6 +329,10 @@
                 const dueDateDisplay = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('th-TH');
                 const expiryDateDisplay = expiryObj.toLocaleDateString('th-TH');
 
+                // คำนวณดอกเบี้ยปกติ และ ค่าปรับ
+                const normalInterest = r.principal * (r.interest_rate / 100);
+                const fineData = calculateFine(r.principal, r.due_date);
+
                 let statusBadge = '';
                 if (r.status === 'ไถ่ถอนแล้ว') {
                     statusBadge = `<span class="px-2.5 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">ไถ่ถอนแล้ว</span>`;
@@ -257,7 +341,9 @@
                 } else if (diffDaysDue < 0) {
                     statusBadge = `
                         <div class="space-y-1">
-                            <span class="px-2 py-0.5 text-xs rounded-md bg-rose-100 text-rose-700 font-bold block">เลยกำหนด ${Math.abs(diffDaysDue)} วัน</span>
+                            <span class="px-2 py-0.5 text-xs rounded-md bg-rose-100 text-rose-700 font-bold block">
+                                เลยกำหนด ${fineData.overdueDays} วัน (ค่าปรับ ฿${fineData.totalFine.toLocaleString('th-TH', {minimumFractionDigits: 2})})
+                            </span>
                             <span class="text-xs text-amber-600 font-medium block">เหลืออีก ${diffDaysExpiry} วันหมดสัญญา</span>
                         </div>`;
                 } else {
@@ -277,13 +363,17 @@
                         </td>
                         <td class="p-4 font-medium text-slate-700">${r.item_name}</td>
                         <td class="p-4 font-bold text-slate-800">฿${r.principal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
-                        <td class="p-4 text-xs text-slate-600">${r.interest_rate}% / ${r.contract_days} วัน</td>
+                        <td class="p-4 text-xs text-slate-600">
+                            <div>${r.interest_rate}% / ${r.contract_days} วัน</div>
+                            <div class="text-slate-400">ดอกเบี้ย: ฿${normalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                        </td>
                         <td class="p-4 text-xs">
                             <div class="font-medium text-slate-700">ครบ: ${dueDateDisplay}</div>
                             <div class="text-slate-400">หมด: ${expiryDateDisplay}</div>
                         </td>
                         <td class="p-4">${statusBadge}</td>
                         <td class="p-4 text-center space-x-1">
+                            <button onclick="openEditModal(${r.id})" class="px-2 py-1 text-xs bg-amber-50 text-amber-600 rounded hover:bg-amber-100 font-medium"><i class="fa-solid fa-pen"></i> แก้ไข</button>
                             ${r.status === 'กำลังจำนำ' ? `
                                 <button onclick="handleExtend(${r.id})" class="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 font-medium">ต่อดอก</button>
                                 <button onclick="handleRedeem(${r.id})" class="px-2 py-1 text-xs bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 font-medium">ไถ่ถอน</button>
@@ -295,6 +385,61 @@
             }).join('');
         }
 
+        // 5. เปิด Modal แก้ไขข้อมูล
+        function openEditModal(id) {
+            const record = pawnRecords.find(r => r.id === id);
+            if (!record) return;
+
+            document.getElementById('editId').value = record.id;
+            document.getElementById('editDisplayId').innerText = `#${record.id}`;
+            document.getElementById('editCustomer').value = record.customer_name;
+            document.getElementById('editPhone').value = record.phone || '';
+            document.getElementById('editItem').value = record.item_name;
+            document.getElementById('editPrincipal').value = record.principal;
+            document.getElementById('editInterestRate').value = record.interest_rate;
+            document.getElementById('editContractDays').value = record.contract_days;
+            document.getElementById('editGraceDays').value = record.grace_days || 7;
+            document.getElementById('editStartDate').value = record.start_date;
+            document.getElementById('editDueDate').value = record.due_date;
+            document.getElementById('editStatus').value = record.status;
+
+            openModal('editModal');
+        }
+
+        // 6. ส่งข้อมูลการแก้ไขผ่าน API (PUT)
+        async function handleSaveEdit(e) {
+            e.preventDefault();
+
+            const payload = {
+                id: parseInt(document.getElementById('editId').value),
+                customer_name: document.getElementById('editCustomer').value,
+                phone: document.getElementById('editPhone').value,
+                item_name: document.getElementById('editItem').value,
+                principal: parseFloat(document.getElementById('editPrincipal').value),
+                interest_rate: parseFloat(document.getElementById('editInterestRate').value),
+                contract_days: parseInt(document.getElementById('editContractDays').value),
+                grace_days: parseInt(document.getElementById('editGraceDays').value),
+                start_date: document.getElementById('editStartDate').value,
+                due_date: document.getElementById('editDueDate').value,
+                status: document.getElementById('editStatus').value
+            };
+
+            const res = await fetch('/api/pawns', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeModal('editModal');
+                fetchPawns();
+            } else {
+                const errData = await res.json();
+                alert(`แก้ไขข้อมูลไม่สำเร็จ: ${errData.error || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'}`);
+            }
+        }
+
+        // 7. ฟังก์ชันบันทึกสัญญาใหม่ (POST)
         async function handleAdd(e) {
             e.preventDefault();
             const startDateObj = new Date(document.getElementById('addStartDate').value);
@@ -332,9 +477,14 @@
             }
         }
 
+        // 8. ฟังก์ชันต่อดอกเบี้ย (คำนวณรวมดอกเบี้ยปกติ + ค่าปรับเลยกำหนด)
         async function handleExtend(id) {
             const record = pawnRecords.find(r => r.id === id);
             if (!record) return;
+
+            const normalInterest = record.principal * (record.interest_rate / 100);
+            const fineData = calculateFine(record.principal, record.due_date);
+            const totalPay = normalInterest + fineData.totalFine;
 
             const parts = record.due_date.split('-');
             const currentDue = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -342,7 +492,15 @@
 
             const newDueDateStr = `${currentDue.getFullYear()}-${String(currentDue.getMonth() + 1).padStart(2, '0')}-${String(currentDue.getDate()).padStart(2, '0')}`;
 
-            if (confirm(`ยืนยันการรับชำระต่อดอกเบี้ย? วันครบกำหนดใหม่จะเป็น: ${currentDue.toLocaleDateString('th-TH')}`)) {
+            let confirmMsg = `ยืนยันการรับชำระต่อดอกเบี้ยสำหรับสัญญา #${id}?\n\n`;
+            confirmMsg += `- ดอกเบี้ยปกติ: ฿${normalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
+            if (fineData.totalFine > 0) {
+                confirmMsg += `- ค่าปรับเลยกำหนด (${fineData.overdueDays} วัน x 1%): ฿${fineData.totalFine.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
+            }
+            confirmMsg += `👉 ยอดชำระรวมทั้งสิ้น: ฿${totalPay.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
+            confirmMsg += `📅 วันครบกำหนดใหม่จะเป็น: ${currentDue.toLocaleDateString('th-TH')}`;
+
+            if (confirm(confirmMsg)) {
                 record.due_date = newDueDateStr;
                 await fetch('/api/pawns', {
                     method: 'PUT',
@@ -353,11 +511,24 @@
             }
         }
 
+        // 9. ฟังก์ชันไถ่ถอน
         async function handleRedeem(id) {
             const record = pawnRecords.find(r => r.id === id);
             if (!record) return;
 
-            if (confirm(`ยืนยันการรับชำระเงินและไถ่ถอนคืนสินค้าสำหรับสัญญา #${id}?`)) {
+            const normalInterest = record.principal * (record.interest_rate / 100);
+            const fineData = calculateFine(record.principal, record.due_date);
+            const totalPay = record.principal + normalInterest + fineData.totalFine;
+
+            let confirmMsg = `ยืนยันการรับชำระเงินและไถ่ถอนคืนสินค้าสำหรับสัญญา #${id}?\n\n`;
+            confirmMsg += `- เงินต้น: ฿${record.principal.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
+            confirmMsg += `- ดอกเบี้ย: ฿${normalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
+            if (fineData.totalFine > 0) {
+                confirmMsg += `- ค่าปรับเลยกำหนด (${fineData.overdueDays} วัน): ฿${fineData.totalFine.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
+            }
+            confirmMsg += `👉 ยอดชำระไถ่ถอนรวมทั้งสิ้น: ฿${totalPay.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+
+            if (confirm(confirmMsg)) {
                 record.status = 'ไถ่ถอนแล้ว';
                 await fetch('/api/pawns', {
                     method: 'PUT',
@@ -368,6 +539,7 @@
             }
         }
 
+        // 10. ฟังก์ชันลบสัญญา
         async function handleDelete(id) {
             if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบสัญญา #${id}?`)) {
                 await fetch(`/api/pawns?id=${id}`, { method: 'DELETE' });

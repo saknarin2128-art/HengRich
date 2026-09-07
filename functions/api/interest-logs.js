@@ -15,7 +15,7 @@ export async function onRequest(context) {
     }
 
     try {
-        // 1. GET: ดึงประวัติการต่อดอกตาม pawn_id
+        // 1. GET: ดึงประวัติการต่อดอก
         if (method === "GET") {
             const url = new URL(request.url);
             const pawnId = url.searchParams.get("pawn_id");
@@ -33,14 +33,14 @@ export async function onRequest(context) {
             });
         }
 
-        // 2. POST: บันทึกรายการต่อดอกใหม่
+        // 2. POST: บันทึกรายการต่อดอกใหม่ (พร้อมบันทึก previous_due_date)
         if (method === "POST") {
             const data = await request.json();
-            const { pawn_id, paid_date, paid_time, interest_amount, fine_amount, total_paid, new_due_date } = data;
+            const { pawn_id, paid_date, paid_time, interest_amount, fine_amount, total_paid, previous_due_date, new_due_date } = data;
 
             await env.DB.prepare(`
-                INSERT INTO interest_logs (pawn_id, paid_date, paid_time, interest_amount, fine_amount, total_paid, new_due_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO interest_logs (pawn_id, paid_date, paid_time, interest_amount, fine_amount, total_paid, previous_due_date, new_due_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `).bind(
                 parseInt(pawn_id),
                 paid_date,
@@ -48,6 +48,7 @@ export async function onRequest(context) {
                 parseFloat(interest_amount),
                 parseFloat(fine_amount || 0),
                 parseFloat(total_paid),
+                previous_due_date || '',
                 new_due_date
             ).run();
 
@@ -56,7 +57,7 @@ export async function onRequest(context) {
             });
         }
 
-        // 3. PUT: แก้ไขยอดเงินในประวัติการต่อดอก
+        // 3. PUT: แก้ไขยอดเงินในประวัติ
         if (method === "PUT") {
             const data = await request.json();
             const { id, interest_amount, fine_amount, total_paid } = data;
@@ -77,7 +78,7 @@ export async function onRequest(context) {
             });
         }
 
-        // 4. DELETE: ลบประวัติการต่อดอก
+        // 4. DELETE: ลบประวัติการต่อดอก พร้อมย้อนวันครบกำหนด (Rollback due_date)
         if (method === "DELETE") {
             const url = new URL(request.url);
             const logId = url.searchParams.get("id");
@@ -86,7 +87,28 @@ export async function onRequest(context) {
                 return new Response(JSON.stringify({ error: "Missing log id" }), { status: 400 });
             }
 
-            await env.DB.prepare("DELETE FROM interest_logs WHERE id = ?").bind(parseInt(logId)).run();
+            // 4.1 ค้นหารายละเอียดของประวัติรายการที่จะลบ
+            const log = await env.DB.prepare("SELECT * FROM interest_logs WHERE id = ?").bind(parseInt(logId)).first();
+
+            if (log) {
+                // 4.2 ถ้ามี previous_due_date บันทึกไว้ ให้ย้อนวันครบกำหนดใน pawns กลับไปเป็นวันเดิม
+                if (log.previous_due_date) {
+                    await env.DB.prepare("UPDATE pawns SET due_date = ? WHERE id = ?").bind(log.previous_due_date, log.pawn_id).run();
+                } else {
+                    // กรณีเป็นข้อมูลเก่าที่ไม่มี previous_due_date ให้ดึง contract_days มาคำนวณย้อนกลับ
+                    const pawn = await env.DB.prepare("SELECT contract_days FROM pawns WHERE id = ?").bind(log.pawn_id).first();
+                    if (pawn && log.new_due_date) {
+                        const parts = log.new_due_date.split('-');
+                        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+                        d.setDate(d.getDate() - pawn.contract_days);
+                        const fallbackDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        await env.DB.prepare("UPDATE pawns SET due_date = ? WHERE id = ?").bind(fallbackDate, log.pawn_id).run();
+                    }
+                }
+
+                // 4.3 ทำการลบรายการประวัตินั้นออกจาก interest_logs
+                await env.DB.prepare("DELETE FROM interest_logs WHERE id = ?").bind(parseInt(logId)).run();
+            }
 
             return new Response(JSON.stringify({ success: true }), {
                 headers: { "Content-Type": "application/json; charset=utf-8" }

@@ -56,6 +56,43 @@ export async function onRequest(context) {
             });
         }
 
+        // 3. PUT: แก้ไขยอดเงินในประวัติการต่อดอก
+        if (method === "PUT") {
+            const data = await request.json();
+            const { id, interest_amount, fine_amount, total_paid } = data;
+
+            await env.DB.prepare(`
+                UPDATE interest_logs
+                SET interest_amount = ?, fine_amount = ?, total_paid = ?
+                WHERE id = ?
+            `).bind(
+                parseFloat(interest_amount),
+                parseFloat(fine_amount || 0),
+                parseFloat(total_paid),
+                parseInt(id)
+            ).run();
+
+            return new Response(JSON.stringify({ success: true }), {
+                headers: { "Content-Type": "application/json; charset=utf-8" }
+            });
+        }
+
+        // 4. DELETE: ลบประวัติการต่อดอก
+        if (method === "DELETE") {
+            const url = new URL(request.url);
+            const logId = url.searchParams.get("id");
+
+            if (!logId) {
+                return new Response(JSON.stringify({ error: "Missing log id" }), { status: 400 });
+            }
+
+            await env.DB.prepare("DELETE FROM interest_logs WHERE id = ?").bind(parseInt(logId)).run();
+
+            return new Response(JSON.stringify({ success: true }), {
+                headers: { "Content-Type": "application/json; charset=utf-8" }
+            });
+        }
+
         return new Response("Method Not Allowed", { status: 405 });
     } catch (err) {
         return new Response(JSON.stringify({ success: false, error: err.message }), {

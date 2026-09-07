@@ -216,7 +216,7 @@
         </div>
     </div>
 
-    <!-- Modal 3: ประวัติการต่อดอกเบี้ย (พร้อมปุ่มแก้ไขและลบประวัติ) -->
+    <!-- Modal 3: ประวัติการต่อดอกเบี้ย -->
     <div id="historyModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 z-50">
         <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center border-b pb-3">
@@ -541,7 +541,7 @@
                                 <div class="flex items-center gap-2">
                                     <span><i class="fa-regular fa-calendar text-[11px] mr-1"></i>${log.paid_date} | ${log.paid_time} น.</span>
                                     <button onclick="promptEditLog(${log.id}, ${log.interest_amount}, ${log.fine_amount})" class="text-amber-600 hover:text-amber-700 font-medium px-1.5 py-0.5 bg-amber-50 rounded border border-amber-200/60"><i class="fa-solid fa-pen text-[10px]"></i> แก้ไข</button>
-                                    <button onclick="handleDeleteLog(${log.id})" class="text-rose-600 hover:text-rose-700 px-1 py-0.5"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                                    <button onclick="handleDeleteLog(${log.id})" title="ลบและย้อนวันครบกำหนด" class="text-rose-600 hover:text-rose-700 px-1 py-0.5"><i class="fa-solid fa-trash text-[10px]"></i></button>
                                 </div>
                             </div>
                             <div class="grid grid-cols-3 gap-1 pt-0.5 text-slate-600">
@@ -589,12 +589,13 @@
             }
         }
 
-        // ฟังก์ชันลบประวัติการต่อดอก
+        // ฟังก์ชันลบประวัติการต่อดอก พร้อมสั่งรีเฟรชข้อมูลหน้าจอเพื่อย้อนวันครบกำหนด
         async function handleDeleteLog(logId) {
-            if (confirm("ยืนยันที่จะลบรายการประวัติต่อดอกเบี้ยนี้ใช่หรือไม่?")) {
+            if (confirm("ยืนยันที่จะลบรายการประวัติต่อดอกเบี้ยนี้?\n\n*หมายเหตุ: วันครบกำหนดของสัญญาจะถูกย้อนกลับไปเป็นวันก่อนต่อดอกรอบนี้โดยอัตโนมัติ")) {
                 const res = await fetch(`/api/interest-logs?id=${logId}`, { method: 'DELETE' });
                 if (res.ok) {
-                    openHistoryModal(currentActivePawnId);
+                    await fetchPawns(); // โหลดข้อมูลสัญญาทั้งหมดใหม่เพื่อแสดงวันครบกำหนดที่ย้อนกลับ
+                    openHistoryModal(currentActivePawnId); // โหลดประวัติใน Modal ใหม่
                 } else {
                     alert("ไม่สามารถลบรายการได้");
                 }
@@ -690,7 +691,7 @@
             }
         }
 
-        // ฟังก์ชันต่อดอกเบี้ย พร้อมบันทึกประวัติลง interest_logs
+        // ฟังก์ชันต่อดอกเบี้ย พร้อมบันทึก previous_due_date เก็บไว้สำหรับย้อนกลับ
         async function handleExtend(id) {
             const record = pawnRecords.find(r => r.id === id);
             if (!record) return;
@@ -698,6 +699,8 @@
             const normalInterest = record.principal * (record.interest_rate / 100);
             const fineData = calculateFine(record.principal, record.due_date);
             const totalPay = normalInterest + fineData.totalFine;
+
+            const oldDueDateStr = record.due_date; // เก็บวันเดิมไว้
 
             const parts = record.due_date.split('-');
             const currentDue = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -714,7 +717,7 @@
             confirmMsg += `📅 วันครบกำหนดใหม่จะเป็น: ${currentDue.toLocaleDateString('th-TH')}`;
 
             if (confirm(confirmMsg)) {
-                // 1. อัปเดตวันครบกำหนดใหม่ใน pawns
+                // 1. อัปเดตวันครบกำหนดใหม่ในตาราง pawns
                 record.due_date = newDueDateStr;
                 await fetch('/api/pawns', {
                     method: 'PUT',
@@ -722,7 +725,7 @@
                     body: JSON.stringify(record)
                 });
 
-                // 2. บันทึกประวัติลงตาราง interest_logs
+                // 2. บันทึกประวัติลง interest_logs โดยส่ง previous_due_date ไปด้วย
                 const now = new Date();
                 const nowTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
                 const logPayload = {
@@ -732,6 +735,7 @@
                     interest_amount: normalInterest,
                     fine_amount: fineData.totalFine,
                     total_paid: totalPay,
+                    previous_due_date: oldDueDateStr,
                     new_due_date: newDueDateStr
                 };
 

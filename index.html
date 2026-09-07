@@ -216,7 +216,7 @@
         </div>
     </div>
 
-    <!-- Modal 3: ประวัติการต่อดอกเบี้ย -->
+    <!-- Modal 3: ประวัติการต่อดอกเบี้ย (พร้อมปุ่มแก้ไขและลบประวัติ) -->
     <div id="historyModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 z-50">
         <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center border-b pb-3">
@@ -254,6 +254,7 @@
     <script>
         let pawnRecords = [];
         let currentFilter = 'all';
+        let currentActivePawnId = null;
 
         document.getElementById('addStartDate').valueAsDate = new Date();
 
@@ -509,6 +510,7 @@
 
         // ฟังก์ชันเปิดดูประวัติการต่อดอก
         async function openHistoryModal(id) {
+            currentActivePawnId = id;
             const record = pawnRecords.find(r => r.id === id);
             if (!record) return;
 
@@ -533,10 +535,14 @@
                 listContainer.innerHTML = logs.map((log, index) => {
                     const newDue = new Date(log.new_due_date.split('-')[0], log.new_due_date.split('-')[1] - 1, log.new_due_date.split('-')[2]).toLocaleDateString('th-TH');
                     return `
-                        <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs space-y-1.5">
+                        <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs space-y-1.5" id="logCard-${log.id}">
                             <div class="flex justify-between items-center text-slate-500 border-b border-slate-200/50 pb-1">
                                 <span class="font-bold text-slate-700">ครั้งที่ ${logs.length - index}</span>
-                                <span><i class="fa-regular fa-calendar text-[11px] mr-1"></i>${log.paid_date} | ${log.paid_time} น.</span>
+                                <div class="flex items-center gap-2">
+                                    <span><i class="fa-regular fa-calendar text-[11px] mr-1"></i>${log.paid_date} | ${log.paid_time} น.</span>
+                                    <button onclick="promptEditLog(${log.id}, ${log.interest_amount}, ${log.fine_amount})" class="text-amber-600 hover:text-amber-700 font-medium px-1.5 py-0.5 bg-amber-50 rounded border border-amber-200/60"><i class="fa-solid fa-pen text-[10px]"></i> แก้ไข</button>
+                                    <button onclick="handleDeleteLog(${log.id})" class="text-rose-600 hover:text-rose-700 px-1 py-0.5"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                                </div>
                             </div>
                             <div class="grid grid-cols-3 gap-1 pt-0.5 text-slate-600">
                                 <div>ดอกเบี้ย: <span class="font-semibold text-slate-800">฿${log.interest_amount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span></div>
@@ -551,6 +557,47 @@
                 }).join('');
             } catch (err) {
                 listContainer.innerHTML = `<div class="text-center py-6 text-rose-500 text-xs">โหลดประวัติไม่สำเร็จ</div>`;
+            }
+        }
+
+        // ฟังก์ชันแก้ไขยอดเงินในประวัติการต่อดอก
+        async function promptEditLog(logId, currentInterest, currentFine) {
+            const newInterestStr = prompt("ระบุยอดดอกเบี้ยปกติที่ถูกต้อง (บาท):", currentInterest);
+            if (newInterestStr === null) return;
+            const newFineStr = prompt("ระบุยอดค่าปรับที่ถูกต้อง (บาท):", currentFine);
+            if (newFineStr === null) return;
+
+            const interest = parseFloat(newInterestStr) || 0;
+            const fine = parseFloat(newFineStr) || 0;
+            const total = interest + fine;
+
+            const res = await fetch('/api/interest-logs', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: logId,
+                    interest_amount: interest,
+                    fine_amount: fine,
+                    total_paid: total
+                })
+            });
+
+            if (res.ok) {
+                openHistoryModal(currentActivePawnId);
+            } else {
+                alert("ไม่สามารถบันทึกการแก้ไขได้");
+            }
+        }
+
+        // ฟังก์ชันลบประวัติการต่อดอก
+        async function handleDeleteLog(logId) {
+            if (confirm("ยืนยันที่จะลบรายการประวัติต่อดอกเบี้ยนี้ใช่หรือไม่?")) {
+                const res = await fetch(`/api/interest-logs?id=${logId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    openHistoryModal(currentActivePawnId);
+                } else {
+                    alert("ไม่สามารถลบรายการได้");
+                }
             }
         }
 

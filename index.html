@@ -111,8 +111,6 @@
 
     <!-- TAB 2: หน้าแดชบอร์ดรายได้ต่อดอกเบี้ย (Revenue Dashboard View) -->
     <section id="viewDashboard" class="hidden max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
-
-        <!-- Dashboard Header & Timeframe Filter -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
                 <h2 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -121,7 +119,6 @@
                 </h2>
                 <p class="text-xs text-slate-400 mt-0.5">ข้อมูลคำนวณจากประวัติการต่อดอกเบี้ยจริงในระบบคลาวด์</p>
             </div>
-            <!-- ปุ่มกรองช่วงเวลา -->
             <div class="flex bg-slate-100 p-1 rounded-xl gap-1 text-xs self-stretch sm:self-auto justify-center">
                 <button onclick="setDashFilter('all')" id="dashBtn-all" class="px-3 py-1.5 rounded-lg font-bold bg-white text-orange-600 shadow-sm transition">ทั้งหมด</button>
                 <button onclick="setDashFilter('today')" id="dashBtn-today" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition">วันนี้</button>
@@ -129,7 +126,6 @@
             </div>
         </div>
 
-        <!-- Revenue Stats 4 Cards Grid -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
             <div class="bg-gradient-to-br from-orange-500 to-amber-600 text-white p-4 sm:p-5 rounded-xl shadow-sm space-y-1">
                 <p class="text-[11px] sm:text-xs text-orange-100 font-semibold uppercase">รายรับรวมทั้งสิ้น</p>
@@ -153,7 +149,6 @@
             </div>
         </div>
 
-        <!-- Recent Storewide Transactions Feed -->
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5 space-y-3">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 class="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
@@ -317,6 +312,107 @@
         </div>
     </div>
 
+    <!-- Modal 4: ทำรายการต่อดอกเบี้ย (รองรับการกรอกย้อนหลังและปรับยอดได้อิสระ) -->
+    <div id="extendModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+        <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-800">ทำรายการต่อดอกเบี้ย</h2>
+                    <p id="extendSubtitle" class="text-xs text-orange-600 font-medium"></p>
+                </div>
+                <button onclick="closeModal('extendModal')" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="extendForm" onsubmit="submitExtend(event)" class="space-y-3">
+                <input type="hidden" id="extPawnId">
+                <input type="hidden" id="extOldDueDate">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">วันที่รับเงิน (ย้อนหลังได้) *</label>
+                        <input type="date" id="extPaidDate" required onchange="recalculateExtendValues()" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">เวลารับเงิน *</label>
+                        <input type="time" id="extPaidTime" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">ดอกเบี้ยที่รับ (บาท) *</label>
+                        <input type="number" id="extInterestAmount" step="0.01" required oninput="updateExtendTotal()" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">ค่าปรับที่รับ (บาท)</label>
+                        <input type="number" id="extFineAmount" step="0.01" value="0" oninput="updateExtendTotal()" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-rose-600 focus:ring-2 focus:ring-orange-500">
+                    </div>
+                </div>
+
+                <div class="bg-orange-50 p-3 rounded-xl border border-orange-200/60 flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-700">ยอดรวมที่รับจริง:</span>
+                    <span id="extTotalPaidDisplay" class="text-lg font-extrabold text-orange-600">฿0.00</span>
+                </div>
+
+                <div>
+                    <label class="text-xs font-medium text-slate-600">วันครบกำหนดใหม่ *</label>
+                    <input type="date" id="extNewDueDate" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm font-medium text-blue-600 focus:ring-2 focus:ring-orange-500">
+                    <span class="text-[10px] text-slate-400">ระบบคำนวณบวกตามรอบสัญญาให้อัตโนมัติ หรือแก้ไขวันที่ได้</span>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t">
+                    <button type="button" onclick="closeModal('extendModal')" class="w-full sm:w-auto px-4 py-2.5 text-sm bg-slate-100 text-slate-600 rounded-xl font-medium">ยกเลิก</button>
+                    <button type="submit" class="w-full sm:w-auto px-5 py-2.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-sm">บันทึกการต่อดอก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 5: ทำรายการไถ่ถอนคืนสินค้า (รองรับการกรอกย้อนหลังและปรับยอดได้อิสระ) -->
+    <div id="redeemModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+        <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-800">ทำรายการไถ่ถอนคืนสินค้า</h2>
+                    <p id="redeemSubtitle" class="text-xs text-emerald-600 font-medium"></p>
+                </div>
+                <button onclick="closeModal('redeemModal')" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="redeemForm" onsubmit="submitRedeem(event)" class="space-y-3">
+                <input type="hidden" id="redPawnId">
+
+                <div>
+                    <label class="text-xs font-medium text-slate-600">วันที่ไถ่ถอนจริง (ย้อนหลังได้) *</label>
+                    <input type="date" id="redPaidDate" required onchange="recalculateRedeemValues()" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500">
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="text-slate-400 block">เงินต้น</span>
+                        <span id="redPrincipalDisplay" class="font-bold text-slate-800 text-sm">฿0.00</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">ดอกเบี้ยงวดนี้</span>
+                        <input type="number" id="redInterestAmount" step="0.01" oninput="updateRedeemTotal()" class="w-full mt-1 p-1 border rounded text-xs font-semibold">
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">ค่าปรับ</span>
+                        <input type="number" id="redFineAmount" step="0.01" oninput="updateRedeemTotal()" class="w-full mt-1 p-1 border rounded text-xs font-semibold text-rose-600">
+                    </div>
+                </div>
+
+                <div class="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200/60 flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-700">ยอดไถ่ถอนรวมทั้งสิ้น:</span>
+                    <span id="redTotalPaidDisplay" class="text-lg font-extrabold text-emerald-600">฿0.00</span>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t">
+                    <button type="button" onclick="closeModal('redeemModal')" class="w-full sm:w-auto px-4 py-2.5 text-sm bg-slate-100 text-slate-600 rounded-xl font-medium">ยกเลิก</button>
+                    <button type="submit" class="w-full sm:w-auto px-5 py-2.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium shadow-sm">ยืนยันไถ่ถอน</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Script ควบคุมระบบทั้งหมด -->
     <script>
         let pawnRecords = [];
@@ -327,7 +423,6 @@
 
         document.getElementById('addStartDate').valueAsDate = new Date();
 
-        // 1. ฟังก์ชันสลับหน้าระหว่าง "จัดการสัญญา" และ "แดชบอร์ดรายได้"
         function switchTab(tab) {
             const viewPawns = document.getElementById('viewPawns');
             const viewDashboard = document.getElementById('viewDashboard');
@@ -348,7 +443,6 @@
             }
         }
 
-        // 2. ดึงข้อมูลรายการสัญญา
         async function fetchPawns() {
             try {
                 const res = await fetch('/api/pawns');
@@ -364,7 +458,6 @@
             }
         }
 
-        // 3. ดึงประวัติการต่อดอกเบี้ยทั้งหมดของร้านสำหรับหน้า Dashboard
         async function fetchDashboardLogs() {
             try {
                 const res = await fetch('/api/interest-logs');
@@ -377,7 +470,6 @@
             }
         }
 
-        // 4. สลับตัวกรองช่วงเวลาในหน้า Dashboard (ทั้งหมด / วันนี้ / เดือนนี้)
         function setDashFilter(filter) {
             currentDashFilter = filter;
             ['all', 'today', 'month'].forEach(f => {
@@ -391,14 +483,12 @@
             renderDashboard();
         }
 
-        // 5. ประมวลผลและแสดงผลหน้า Dashboard
         function renderDashboard() {
             const today = new Date();
             const todayStr = today.toLocaleDateString('th-TH');
             const currentMonth = today.getMonth() + 1;
             const currentYear = today.getFullYear();
 
-            // กรองตามช่วงเวลาที่เลือก
             let filteredLogs = allInterestLogs.filter(log => {
                 if (currentDashFilter === 'today') {
                     return log.paid_date === todayStr;
@@ -413,14 +503,12 @@
                 return true;
             });
 
-            // คำนวณผลรวม
             const totalPaid = filteredLogs.reduce((sum, item) => sum + (item.total_paid || 0), 0);
             const totalInterest = filteredLogs.reduce((sum, item) => sum + (item.interest_amount || 0), 0);
             const totalFine = filteredLogs.reduce((sum, item) => sum + (item.fine_amount || 0), 0);
             const count = filteredLogs.length;
             const avgTicket = count > 0 ? (totalPaid / count) : 0;
 
-            // แสดงตัวเลขในการ์ดสรุปผล
             document.getElementById('dashTotalPaid').innerText = `฿${totalPaid.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
             document.getElementById('dashTotalInterest').innerText = `฿${totalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
             document.getElementById('dashTotalFine').innerText = `฿${totalFine.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
@@ -435,7 +523,6 @@
                 return;
             }
 
-            // แสดงรายการธุรกรรมล่าสุด
             container.innerHTML = filteredLogs.map(log => {
                 return `
                     <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-100/70 transition">
@@ -463,20 +550,20 @@
             }).join('');
         }
 
-        function calculateDaysDifference(targetDateStr) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+        function calculateDaysDifference(targetDateStr, baseDateObj = null) {
+            const base = baseDateObj ? new Date(baseDateObj) : new Date();
+            base.setHours(0, 0, 0, 0);
 
             const parts = targetDateStr.split('-');
             const targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
             targetDate.setHours(0, 0, 0, 0);
 
-            const diffInMs = targetDate.getTime() - today.getTime();
+            const diffInMs = targetDate.getTime() - base.getTime();
             return Math.round(diffInMs / (1000 * 60 * 60 * 24));
         }
 
-        function calculateFine(principal, dueDateStr) {
-            const diffDaysDue = calculateDaysDifference(dueDateStr);
+        function calculateFine(principal, dueDateStr, compareDateObj = null) {
+            const diffDaysDue = calculateDaysDifference(dueDateStr, compareDateObj);
             if (diffDaysDue < 0) {
                 const overdueDays = Math.abs(diffDaysDue);
                 const finePerDay = principal * 0.01;
@@ -518,7 +605,6 @@
                 return matchSearch;
             });
 
-            // อัปเดตสถิติด้านบน
             document.getElementById('statTotal').innerText = pawnRecords.length;
             document.getElementById('statActive').innerText = pawnRecords.filter(r => r.status === 'กำลังจำนำ').length;
             document.getElementById('statOverdue').innerText = pawnRecords.filter(r => r.status === 'กำลังจำนำ' && calculateDaysDifference(r.due_date) < 0).length;
@@ -530,7 +616,6 @@
                 return;
             }
 
-            // HTML สำหรับ Mobile Cards View (< md Screen)
             const mobileCardsHtml = `
                 <div class="block md:hidden space-y-3">
                     ${filtered.map(r => {
@@ -594,8 +679,8 @@
                                     </button>
                                     <button onclick="openEditModal(${r.id})" class="flex-1 py-2 text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium active:bg-amber-100">แก้ไข</button>
                                     ${r.status === 'กำลังจำนำ' ? `
-                                        <button onclick="handleExtend(${r.id})" class="flex-1 py-2 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-medium active:bg-blue-100">ต่อดอก</button>
-                                        <button onclick="handleRedeem(${r.id})" class="flex-1 py-2 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-medium active:bg-emerald-100">ไถ่ถอน</button>
+                                        <button onclick="openExtendModal(${r.id})" class="flex-1 py-2 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-medium active:bg-blue-100">ต่อดอก</button>
+                                        <button onclick="openRedeemModal(${r.id})" class="flex-1 py-2 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-medium active:bg-emerald-100">ไถ่ถอน</button>
                                     ` : ''}
                                     <button onclick="handleDelete(${r.id})" class="px-3 py-2 text-xs bg-rose-50 text-rose-600 border border-rose-200 rounded-lg active:bg-rose-100"><i class="fa-solid fa-trash"></i></button>
                                 </div>
@@ -605,7 +690,6 @@
                 </div>
             `;
 
-            // HTML สำหรับ Desktop Table View (>= md Screen)
             const desktopTableHtml = `
                 <div class="hidden md:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
@@ -681,8 +765,8 @@
                                                 <button onclick="openHistoryModal(${r.id})" class="px-2 py-1 text-xs bg-slate-100 text-slate-700 rounded hover:bg-slate-200 font-medium"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติ</button>
                                                 <button onclick="openEditModal(${r.id})" class="px-2 py-1 text-xs bg-amber-50 text-amber-600 rounded hover:bg-amber-100 font-medium"><i class="fa-solid fa-pen"></i> แก้ไข</button>
                                                 ${r.status === 'กำลังจำนำ' ? `
-                                                    <button onclick="handleExtend(${r.id})" class="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 font-medium">ต่อดอก</button>
-                                                    <button onclick="handleRedeem(${r.id})" class="px-2 py-1 text-xs bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 font-medium">ไถ่ถอน</button>
+                                                    <button onclick="openExtendModal(${r.id})" class="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 font-medium">ต่อดอก</button>
+                                                    <button onclick="openRedeemModal(${r.id})" class="px-2 py-1 text-xs bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 font-medium">ไถ่ถอน</button>
                                                 ` : ''}
                                                 <button onclick="handleDelete(${r.id})" class="px-2 py-1 text-xs bg-rose-50 text-rose-600 rounded hover:bg-rose-100"><i class="fa-solid fa-trash"></i></button>
                                             </td>
@@ -698,7 +782,175 @@
             container.innerHTML = mobileCardsHtml + desktopTableHtml;
         }
 
-        // เปิดดูประวัติการต่อดอกของสัญญาเดี่ยว
+        // ====================================================
+        // ระบบต่อดอกเบี้ยแบบย้อนหลัง (Extend Backdated Logic)
+        // ====================================================
+        function openExtendModal(id) {
+            const record = pawnRecords.find(r => r.id === id);
+            if (!record) return;
+
+            document.getElementById('extPawnId').value = record.id;
+            document.getElementById('extOldDueDate').value = record.due_date;
+            document.getElementById('extendSubtitle').innerText = `สัญญา #${record.id} - ${record.customer_name} (${record.item_name})`;
+
+            const today = new Date();
+            document.getElementById('extPaidDate').value = today.toISOString().split('T')[0];
+            document.getElementById('extPaidTime').value = `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+
+            recalculateExtendValues();
+            openModal('extendModal');
+        }
+
+        function recalculateExtendValues() {
+            const pawnId = parseInt(document.getElementById('extPawnId').value);
+            const record = pawnRecords.find(r => r.id === pawnId);
+            if (!record) return;
+
+            const paidDateStr = document.getElementById('extPaidDate').value;
+            const paidDateParts = paidDateStr.split('-');
+            const paidDateObj = new Date(paidDateParts[0], paidDateParts[1] - 1, paidDateParts[2]);
+
+            // คำนวณดอกเบี้ยปกติ
+            const normalInterest = record.principal * (record.interest_rate / 100);
+            document.getElementById('extInterestAmount').value = normalInterest.toFixed(2);
+
+            // คำนวณค่าปรับเทียบกับวันที่รับเงินจริง
+            const fineData = calculateFine(record.principal, record.due_date, paidDateObj);
+            document.getElementById('extFineAmount').value = fineData.totalFine.toFixed(2);
+
+            // คำนวณวันครบกำหนดรอบใหม่ (วันครบกำหนดเดิม + contract_days)
+            const parts = record.due_date.split('-');
+            const newDue = new Date(parts[0], parts[1] - 1, parts[2]);
+            newDue.setDate(newDue.getDate() + record.contract_days);
+            document.getElementById('extNewDueDate').value = `${newDue.getFullYear()}-${String(newDue.getMonth() + 1).padStart(2, '0')}-${String(newDue.getDate()).padStart(2, '0')}`;
+
+            updateExtendTotal();
+        }
+
+        function updateExtendTotal() {
+            const interest = parseFloat(document.getElementById('extInterestAmount').value) || 0;
+            const fine = parseFloat(document.getElementById('extFineAmount').value) || 0;
+            const total = interest + fine;
+            document.getElementById('extTotalPaidDisplay').innerText = `฿${total.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+        }
+
+        async function submitExtend(e) {
+            e.preventDefault();
+            const pawnId = parseInt(document.getElementById('extPawnId').value);
+            const record = pawnRecords.find(r => r.id === pawnId);
+            if (!record) return;
+
+            const paidDateStr = document.getElementById('extPaidDate').value;
+            const paidTimeStr = document.getElementById('extPaidTime').value;
+            const interestAmount = parseFloat(document.getElementById('extInterestAmount').value) || 0;
+            const fineAmount = parseFloat(document.getElementById('extFineAmount').value) || 0;
+            const totalPaid = interestAmount + fineAmount;
+            const newDueDateStr = document.getElementById('extNewDueDate').value;
+            const oldDueDateStr = document.getElementById('extOldDueDate').value;
+
+            // 1. อัปเดตวันครบกำหนดใหม่ลงตาราง pawns
+            record.due_date = newDueDateStr;
+            await fetch('/api/pawns', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(record)
+            });
+
+            // 2. บันทึกประวัติลง interest_logs
+            const parts = paidDateStr.split('-');
+            const displayDateStr = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('th-TH');
+
+            const logPayload = {
+                pawn_id: record.id,
+                paid_date: displayDateStr,
+                paid_time: paidTimeStr,
+                interest_amount: interestAmount,
+                fine_amount: fineAmount,
+                total_paid: totalPaid,
+                previous_due_date: oldDueDateStr,
+                new_due_date: newDueDateStr
+            };
+
+            await fetch('/api/interest-logs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(logPayload)
+            });
+
+            closeModal('extendModal');
+            fetchPawns();
+            fetchDashboardLogs();
+        }
+
+        // ====================================================
+        // ระบบไถ่ถอนคืนสินค้าแบบย้อนหลัง (Redeem Backdated Logic)
+        // ====================================================
+        function openRedeemModal(id) {
+            const record = pawnRecords.find(r => r.id === id);
+            if (!record) return;
+
+            document.getElementById('redPawnId').value = record.id;
+            document.getElementById('redeemSubtitle').innerText = `สัญญา #${record.id} - ${record.customer_name} (${record.item_name})`;
+            document.getElementById('redPrincipalDisplay').innerText = `฿${record.principal.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+
+            const today = new Date();
+            document.getElementById('redPaidDate').value = today.toISOString().split('T')[0];
+
+            recalculateRedeemValues();
+            openModal('redeemModal');
+        }
+
+        function recalculateRedeemValues() {
+            const pawnId = parseInt(document.getElementById('redPawnId').value);
+            const record = pawnRecords.find(r => r.id === pawnId);
+            if (!record) return;
+
+            const paidDateStr = document.getElementById('redPaidDate').value;
+            const parts = paidDateStr.split('-');
+            const paidDateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+
+            const normalInterest = record.principal * (record.interest_rate / 100);
+            document.getElementById('redInterestAmount').value = normalInterest.toFixed(2);
+
+            const fineData = calculateFine(record.principal, record.due_date, paidDateObj);
+            document.getElementById('redFineAmount').value = fineData.totalFine.toFixed(2);
+
+            updateRedeemTotal();
+        }
+
+        function updateRedeemTotal() {
+            const pawnId = parseInt(document.getElementById('redPawnId').value);
+            const record = pawnRecords.find(r => r.id === pawnId);
+            if (!record) return;
+
+            const interest = parseFloat(document.getElementById('redInterestAmount').value) || 0;
+            const fine = parseFloat(document.getElementById('redFineAmount').value) || 0;
+            const total = record.principal + interest + fine;
+
+            document.getElementById('redTotalPaidDisplay').innerText = `฿${total.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+        }
+
+        async function submitRedeem(e) {
+            e.preventDefault();
+            const pawnId = parseInt(document.getElementById('redPawnId').value);
+            const record = pawnRecords.find(r => r.id === pawnId);
+            if (!record) return;
+
+            record.status = 'ไถ่ถอนแล้ว';
+            await fetch('/api/pawns', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(record)
+            });
+
+            closeModal('redeemModal');
+            fetchPawns();
+            fetchDashboardLogs();
+        }
+
+        // ====================================================
+        // ระบบประวัติและการจัดการสัญญาเดิม
+        // ====================================================
         async function openHistoryModal(id) {
             currentActivePawnId = id;
             const record = pawnRecords.find(r => r.id === id);
@@ -878,88 +1130,6 @@
             } else {
                 const errData = await res.json();
                 alert(`บันทึกไม่สำเร็จ: ${errData.error || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'}`);
-            }
-        }
-
-        async function handleExtend(id) {
-            const record = pawnRecords.find(r => r.id === id);
-            if (!record) return;
-
-            const normalInterest = record.principal * (record.interest_rate / 100);
-            const fineData = calculateFine(record.principal, record.due_date);
-            const totalPay = normalInterest + fineData.totalFine;
-
-            const oldDueDateStr = record.due_date;
-
-            const parts = record.due_date.split('-');
-            const currentDue = new Date(parts[0], parts[1] - 1, parts[2]);
-            currentDue.setDate(currentDue.getDate() + record.contract_days);
-
-            const newDueDateStr = `${currentDue.getFullYear()}-${String(currentDue.getMonth() + 1).padStart(2, '0')}-${String(currentDue.getDate()).padStart(2, '0')}`;
-
-            let confirmMsg = `ยืนยันการรับชำระต่อดอกเบี้ยสำหรับสัญญา #${id}?\n\n`;
-            confirmMsg += `- ดอกเบี้ยปกติ: ฿${normalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
-            if (fineData.totalFine > 0) {
-                confirmMsg += `- ค่าปรับเลยกำหนด (${fineData.overdueDays} วัน x 1%): ฿${fineData.totalFine.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
-            }
-            confirmMsg += `👉 ยอดชำระรวมทั้งสิ้น: ฿${totalPay.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
-            confirmMsg += `📅 วันครบกำหนดใหม่จะเป็น: ${currentDue.toLocaleDateString('th-TH')}`;
-
-            if (confirm(confirmMsg)) {
-                record.due_date = newDueDateStr;
-                await fetch('/api/pawns', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(record)
-                });
-
-                const now = new Date();
-                const nowTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                const logPayload = {
-                    pawn_id: record.id,
-                    paid_date: now.toLocaleDateString('th-TH'),
-                    paid_time: nowTimeStr,
-                    interest_amount: normalInterest,
-                    fine_amount: fineData.totalFine,
-                    total_paid: totalPay,
-                    previous_due_date: oldDueDateStr,
-                    new_due_date: newDueDateStr
-                };
-
-                await fetch('/api/interest-logs', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(logPayload)
-                });
-
-                fetchPawns();
-            }
-        }
-
-        async function handleRedeem(id) {
-            const record = pawnRecords.find(r => r.id === id);
-            if (!record) return;
-
-            const normalInterest = record.principal * (record.interest_rate / 100);
-            const fineData = calculateFine(record.principal, record.due_date);
-            const totalPay = record.principal + normalInterest + fineData.totalFine;
-
-            let confirmMsg = `ยืนยันการรับชำระเงินและไถ่ถอนคืนสินค้าสำหรับสัญญา #${id}?\n\n`;
-            confirmMsg += `- เงินต้น: ฿${record.principal.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
-            confirmMsg += `- ดอกเบี้ย: ฿${normalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
-            if (fineData.totalFine > 0) {
-                confirmMsg += `- ค่าปรับเลยกำหนด (${fineData.overdueDays} วัน): ฿${fineData.totalFine.toLocaleString('th-TH', {minimumFractionDigits: 2})}\n`;
-            }
-            confirmMsg += `👉 ยอดชำระไถ่ถอนรวมทั้งสิ้น: ฿${totalPay.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
-
-            if (confirm(confirmMsg)) {
-                record.status = 'ไถ่ถอนแล้ว';
-                await fetch('/api/pawns', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(record)
-                });
-                fetchPawns();
             }
         }
 

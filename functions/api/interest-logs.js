@@ -15,25 +15,41 @@ export async function onRequest(context) {
     }
 
     try {
-        // 1. GET: ดึงประวัติการต่อดอก
+        // 1. GET: ดึงข้อมูลประวัติการต่อดอก
         if (method === "GET") {
             const url = new URL(request.url);
             const pawnId = url.searchParams.get("pawn_id");
 
-            if (!pawnId) {
-                return new Response(JSON.stringify({ error: "Missing pawn_id" }), { status: 400 });
+            let query = "";
+            let results = [];
+
+            if (pawnId) {
+                // กรณีดึงเฉพาะสัญญาหนึ่ง (ใช้ใน History Modal)
+                query = "SELECT * FROM interest_logs WHERE pawn_id = ? ORDER BY id DESC";
+                const res = await env.DB.prepare(query).bind(pawnId).all();
+                results = res.results || [];
+            } else {
+                // กรณีดึงประวัติทั้งหมดของร้านสำหรับหน้า Dashboard (JOIN ข้อมูลลูกค้าและสินค้า)
+                query = `
+                    SELECT 
+                        interest_logs.*,
+                        pawns.customer_name,
+                        pawns.item_name,
+                        pawns.principal
+                    FROM interest_logs
+                    LEFT JOIN pawns ON interest_logs.pawn_id = pawns.id
+                    ORDER BY interest_logs.id DESC
+                `;
+                const res = await env.DB.prepare(query).all();
+                results = res.results || [];
             }
 
-            const { results } = await env.DB.prepare(
-                "SELECT * FROM interest_logs WHERE pawn_id = ? ORDER BY id DESC"
-            ).bind(pawnId).all();
-
-            return new Response(JSON.stringify(results || []), {
+            return new Response(JSON.stringify(results), {
                 headers: { "Content-Type": "application/json; charset=utf-8" }
             });
         }
 
-        // 2. POST: บันทึกรายการต่อดอกใหม่ (พร้อมบันทึก previous_due_date)
+        // 2. POST: บันทึกรายการต่อดอกใหม่
         if (method === "POST") {
             const data = await request.json();
             const { pawn_id, paid_date, paid_time, interest_amount, fine_amount, total_paid, previous_due_date, new_due_date } = data;
@@ -78,7 +94,7 @@ export async function onRequest(context) {
             });
         }
 
-        // 4. DELETE: ลบประวัติการต่อดอก พร้อมย้อนวันครบกำหนด (Rollback due_date)
+        // 4. DELETE: ลบประวัติการต่อดอก พร้อม Rollback วันครบกำหนด
         if (method === "DELETE") {
             const url = new URL(request.url);
             const logId = url.searchParams.get("id");
@@ -87,15 +103,12 @@ export async function onRequest(context) {
                 return new Response(JSON.stringify({ error: "Missing log id" }), { status: 400 });
             }
 
-            // 4.1 ค้นหารายละเอียดของประวัติรายการที่จะลบ
             const log = await env.DB.prepare("SELECT * FROM interest_logs WHERE id = ?").bind(parseInt(logId)).first();
 
             if (log) {
-                // 4.2 ถ้ามี previous_due_date บันทึกไว้ ให้ย้อนวันครบกำหนดใน pawns กลับไปเป็นวันเดิม
                 if (log.previous_due_date) {
                     await env.DB.prepare("UPDATE pawns SET due_date = ? WHERE id = ?").bind(log.previous_due_date, log.pawn_id).run();
                 } else {
-                    // กรณีเป็นข้อมูลเก่าที่ไม่มี previous_due_date ให้ดึง contract_days มาคำนวณย้อนกลับ
                     const pawn = await env.DB.prepare("SELECT contract_days FROM pawns WHERE id = ?").bind(log.pawn_id).first();
                     if (pawn && log.new_due_date) {
                         const parts = log.new_due_date.split('-');
@@ -106,7 +119,6 @@ export async function onRequest(context) {
                     }
                 }
 
-                // 4.3 ทำการลบรายการประวัตินั้นออกจาก interest_logs
                 await env.DB.prepare("DELETE FROM interest_logs WHERE id = ?").bind(parseInt(logId)).run();
             }
 

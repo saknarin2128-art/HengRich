@@ -15,16 +15,16 @@
 </head>
 <body class="text-slate-800 pb-10">
 
-    <!-- Header Bar (Mobile-Optimized) -->
+    <!-- Header Bar & Main Navigation -->
     <header class="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
+        <div class="max-w-7xl mx-auto px-4 py-3 sm:py-3.5 flex justify-between items-center">
             <div class="flex items-center space-x-2.5 sm:space-x-3">
                 <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center text-white">
                     <i class="fa-solid fa-store text-lg sm:text-xl"></i>
                 </div>
                 <div>
                     <h1 class="text-base sm:text-xl font-bold leading-tight">ระบบจัดการร้านรับจำนำ</h1>
-                    <p class="text-[10px] sm:text-xs text-amber-100">HengRich Cloud D1</p>
+                    <p class="text-[10px] sm:text-xs text-amber-100">HengRich Pawnshop Cloud</p>
                 </div>
             </div>
             <button onclick="openModal('addModal')" class="bg-white text-orange-600 hover:bg-orange-50 font-semibold px-3 py-2 sm:px-4 sm:py-2 rounded-xl shadow-sm text-xs sm:text-sm transition flex items-center gap-1.5 active:scale-95">
@@ -32,9 +32,20 @@
                 <span>ฝากสินค้าใหม่</span>
             </button>
         </div>
+
+        <!-- Tab Navigation Bar -->
+        <div class="max-w-7xl mx-auto px-4 flex gap-2 border-t border-white/10 pt-1 pb-1 text-xs sm:text-sm font-medium">
+            <button onclick="switchTab('pawns')" id="tabBtnPawns" class="px-3.5 py-1.5 rounded-t-lg bg-white text-orange-600 font-bold transition flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-list-check"></i> จัดการสัญญา
+            </button>
+            <button onclick="switchTab('dashboard')" id="tabBtnDashboard" class="px-3.5 py-1.5 rounded-t-lg text-amber-100 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-chart-line"></i> แดชบอร์ดรายได้ต่อดอก
+            </button>
+        </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+    <!-- TAB 1: หน้ารายการสัญญาจำนำ (Pawns Management View) -->
+    <main id="viewPawns" class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         <!-- Stats Cards Grid -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
@@ -67,7 +78,7 @@
             </div>
             <div class="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase">ยอดเงินฝากรวม</p>
+                    <p class="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase">ยอดเงินต้นฝากรวม</p>
                     <p id="statAmount" class="text-lg sm:text-2xl font-bold text-orange-600 mt-0.5">฿0.00</p>
                 </div>
                 <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center text-xs sm:text-base">
@@ -90,13 +101,71 @@
             </div>
         </div>
 
-        <!-- Container แสดงผล (Mobile Cards & Desktop Table) -->
+        <!-- Container แสดงผลสัญญา (Mobile Cards & Desktop Table) -->
         <div id="pawnContainer">
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center text-slate-400 text-xs sm:text-sm">
                 กำลังโหลดข้อมูลจากคลาวด์...
             </div>
         </div>
     </main>
+
+    <!-- TAB 2: หน้าแดชบอร์ดรายได้ต่อดอกเบี้ย (Revenue Dashboard View) -->
+    <section id="viewDashboard" class="hidden max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+
+        <!-- Dashboard Header & Timeframe Filter -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+                <h2 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span>
+                    สรุปภาพรวมรายได้จากการต่อดอกเบี้ย
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">ข้อมูลคำนวณจากประวัติการต่อดอกเบี้ยจริงในระบบคลาวด์</p>
+            </div>
+            <!-- ปุ่มกรองช่วงเวลา -->
+            <div class="flex bg-slate-100 p-1 rounded-xl gap-1 text-xs self-stretch sm:self-auto justify-center">
+                <button onclick="setDashFilter('all')" id="dashBtn-all" class="px-3 py-1.5 rounded-lg font-bold bg-white text-orange-600 shadow-sm transition">ทั้งหมด</button>
+                <button onclick="setDashFilter('today')" id="dashBtn-today" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition">วันนี้</button>
+                <button onclick="setDashFilter('month')" id="dashBtn-month" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition">เดือนนี้</button>
+            </div>
+        </div>
+
+        <!-- Revenue Stats 4 Cards Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <div class="bg-gradient-to-br from-orange-500 to-amber-600 text-white p-4 sm:p-5 rounded-xl shadow-sm space-y-1">
+                <p class="text-[11px] sm:text-xs text-orange-100 font-semibold uppercase">รายรับรวมทั้งสิ้น</p>
+                <p id="dashTotalPaid" class="text-xl sm:text-3xl font-extrabold">฿0.00</p>
+                <p class="text-[10px] text-orange-200">ดอกเบี้ยปกติ + ค่าปรับเลยกำหนด</p>
+            </div>
+            <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-1">
+                <p class="text-[11px] sm:text-xs text-slate-400 font-semibold uppercase">ดอกเบี้ยปกติที่เก็บได้</p>
+                <p id="dashTotalInterest" class="text-xl sm:text-3xl font-bold text-emerald-600">฿0.00</p>
+                <p class="text-[10px] text-slate-400">กำไรจากอัตราดอกเบี้ยสัญญา</p>
+            </div>
+            <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-1">
+                <p class="text-[11px] sm:text-xs text-slate-400 font-semibold uppercase">ค่าปรับที่เก็บได้</p>
+                <p id="dashTotalFine" class="text-xl sm:text-3xl font-bold text-rose-600">฿0.00</p>
+                <p class="text-[10px] text-slate-400">1% ต่อวันเมื่อเลยกำหนด</p>
+            </div>
+            <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-1">
+                <p class="text-[11px] sm:text-xs text-slate-400 font-semibold uppercase">จำนวนครั้งที่ต่อดอก</p>
+                <p id="dashCount" class="text-xl sm:text-3xl font-bold text-slate-800">0 ครั้ง</p>
+                <p id="dashAvgTicket" class="text-[10px] text-slate-400">เฉลี่ย ฿0.00 / ครั้ง</p>
+            </div>
+        </div>
+
+        <!-- Recent Storewide Transactions Feed -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5 space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-orange-500"></i> รายการต่อดอกเบี้ยล่าสุดทั่วทั้งร้าน
+                </h3>
+                <span id="dashRecordCount" class="text-xs text-slate-400 font-medium">0 รายการ</span>
+            </div>
+            <div id="dashTransactionContainer" class="space-y-2.5">
+                <div class="text-center py-8 text-slate-400 text-xs">กำลังโหลดข้อมูลธุรกรรม...</div>
+            </div>
+        </div>
+    </section>
 
     <!-- Modal 1: ฝากสินค้าใหม่ -->
     <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 z-50">
@@ -216,7 +285,7 @@
         </div>
     </div>
 
-    <!-- Modal 3: ประวัติการต่อดอกเบี้ย -->
+    <!-- Modal 3: ประวัติการต่อดอกเบี้ยของสัญญาเดี่ยว -->
     <div id="historyModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 z-50">
         <div class="bg-white rounded-t-2xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center border-b pb-3">
@@ -227,7 +296,6 @@
                 <button onclick="closeModal('historyModal')" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <!-- Summary Box -->
             <div class="grid grid-cols-2 gap-3 bg-orange-50 border border-orange-200/60 p-3.5 rounded-xl">
                 <div>
                     <span class="text-[11px] text-orange-700 font-medium block">จำนวนครั้งที่ต่อดอก</span>
@@ -239,7 +307,6 @@
                 </div>
             </div>
 
-            <!-- List Container -->
             <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
                 <div class="text-center py-8 text-slate-400 text-xs">กำลังโหลดประวัติ...</div>
             </div>
@@ -250,14 +317,38 @@
         </div>
     </div>
 
-    <!-- Script ควบคุมระบบ -->
+    <!-- Script ควบคุมระบบทั้งหมด -->
     <script>
         let pawnRecords = [];
+        let allInterestLogs = [];
         let currentFilter = 'all';
+        let currentDashFilter = 'all';
         let currentActivePawnId = null;
 
         document.getElementById('addStartDate').valueAsDate = new Date();
 
+        // 1. ฟังก์ชันสลับหน้าระหว่าง "จัดการสัญญา" และ "แดชบอร์ดรายได้"
+        function switchTab(tab) {
+            const viewPawns = document.getElementById('viewPawns');
+            const viewDashboard = document.getElementById('viewDashboard');
+            const tabBtnPawns = document.getElementById('tabBtnPawns');
+            const tabBtnDashboard = document.getElementById('tabBtnDashboard');
+
+            if (tab === 'pawns') {
+                viewPawns.classList.remove('hidden');
+                viewDashboard.classList.add('hidden');
+                tabBtnPawns.className = "px-3.5 py-1.5 rounded-t-lg bg-white text-orange-600 font-bold transition flex items-center gap-1.5 shadow-sm";
+                tabBtnDashboard.className = "px-3.5 py-1.5 rounded-t-lg text-amber-100 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5";
+            } else {
+                viewPawns.classList.add('hidden');
+                viewDashboard.classList.remove('hidden');
+                tabBtnDashboard.className = "px-3.5 py-1.5 rounded-t-lg bg-white text-orange-600 font-bold transition flex items-center gap-1.5 shadow-sm";
+                tabBtnPawns.className = "px-3.5 py-1.5 rounded-t-lg text-amber-100 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5";
+                fetchDashboardLogs();
+            }
+        }
+
+        // 2. ดึงข้อมูลรายการสัญญา
         async function fetchPawns() {
             try {
                 const res = await fetch('/api/pawns');
@@ -271,6 +362,105 @@
             } catch (err) {
                 console.error("Error fetching data:", err);
             }
+        }
+
+        // 3. ดึงประวัติการต่อดอกเบี้ยทั้งหมดของร้านสำหรับหน้า Dashboard
+        async function fetchDashboardLogs() {
+            try {
+                const res = await fetch('/api/interest-logs');
+                if (res.ok) {
+                    allInterestLogs = await res.json();
+                    renderDashboard();
+                }
+            } catch (err) {
+                console.error("Error fetching dashboard logs:", err);
+            }
+        }
+
+        // 4. สลับตัวกรองช่วงเวลาในหน้า Dashboard (ทั้งหมด / วันนี้ / เดือนนี้)
+        function setDashFilter(filter) {
+            currentDashFilter = filter;
+            ['all', 'today', 'month'].forEach(f => {
+                const btn = document.getElementById(`dashBtn-${f}`);
+                if (f === filter) {
+                    btn.className = "px-3 py-1.5 rounded-lg font-bold bg-white text-orange-600 shadow-sm transition";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition";
+                }
+            });
+            renderDashboard();
+        }
+
+        // 5. ประมวลผลและแสดงผลหน้า Dashboard
+        function renderDashboard() {
+            const today = new Date();
+            const todayStr = today.toLocaleDateString('th-TH');
+            const currentMonth = today.getMonth() + 1;
+            const currentYear = today.getFullYear();
+
+            // กรองตามช่วงเวลาที่เลือก
+            let filteredLogs = allInterestLogs.filter(log => {
+                if (currentDashFilter === 'today') {
+                    return log.paid_date === todayStr;
+                }
+                if (currentDashFilter === 'month') {
+                    if (log.created_at) {
+                        const d = new Date(log.created_at);
+                        return (d.getMonth() + 1) === currentMonth && d.getFullYear() === currentYear;
+                    }
+                    return true;
+                }
+                return true;
+            });
+
+            // คำนวณผลรวม
+            const totalPaid = filteredLogs.reduce((sum, item) => sum + (item.total_paid || 0), 0);
+            const totalInterest = filteredLogs.reduce((sum, item) => sum + (item.interest_amount || 0), 0);
+            const totalFine = filteredLogs.reduce((sum, item) => sum + (item.fine_amount || 0), 0);
+            const count = filteredLogs.length;
+            const avgTicket = count > 0 ? (totalPaid / count) : 0;
+
+            // แสดงตัวเลขในการ์ดสรุปผล
+            document.getElementById('dashTotalPaid').innerText = `฿${totalPaid.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+            document.getElementById('dashTotalInterest').innerText = `฿${totalInterest.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+            document.getElementById('dashTotalFine').innerText = `฿${totalFine.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
+            document.getElementById('dashCount').innerText = `${count} ครั้ง`;
+            document.getElementById('dashAvgTicket').innerText = `เฉลี่ย ฿${avgTicket.toLocaleString('th-TH', {minimumFractionDigits: 2})} / ครั้ง`;
+            document.getElementById('dashRecordCount').innerText = `${count} รายการ`;
+
+            const container = document.getElementById('dashTransactionContainer');
+
+            if (filteredLogs.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-slate-400 text-xs sm:text-sm bg-slate-50 rounded-xl border border-dashed border-slate-200">ยังไม่มีประวัติรายได้ในช่วงเวลาที่เลือก</div>`;
+                return;
+            }
+
+            // แสดงรายการธุรกรรมล่าสุด
+            container.innerHTML = filteredLogs.map(log => {
+                return `
+                    <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-100/70 transition">
+                        <div class="space-y-0.5">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded text-[11px]">#${log.pawn_id}</span>
+                                <span class="font-bold text-slate-800 text-sm">${log.customer_name || 'ลูกค้าทั่วไป'}</span>
+                                <span class="text-slate-400">(${log.item_name || 'ทรัพย์สิน'})</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400">
+                                <i class="fa-regular fa-calendar text-[10px] mr-1"></i>บันทึกเมื่อ: ${log.paid_date} เวลา ${log.paid_time} น.
+                            </div>
+                        </div>
+                        <div class="w-full sm:w-auto flex justify-between sm:justify-end items-center gap-4 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+                            <div class="text-left sm:text-right">
+                                <span class="text-[10px] text-slate-400 block">ดอกเบี้ย ฿${log.interest_amount.toLocaleString('th-TH', {minimumFractionDigits: 2})} | ค่าปรับ ฿${log.fine_amount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <span class="font-extrabold text-emerald-600 text-sm">รับรวม ฿${log.total_paid.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                            </div>
+                            <button onclick="openHistoryModal(${log.pawn_id})" class="text-slate-500 hover:text-orange-600 bg-white border border-slate-200 p-2 rounded-lg text-xs" title="ดูสัญญาชิ้นนี้">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function calculateDaysDifference(targetDateStr) {
@@ -508,7 +698,7 @@
             container.innerHTML = mobileCardsHtml + desktopTableHtml;
         }
 
-        // ฟังก์ชันเปิดดูประวัติการต่อดอก
+        // เปิดดูประวัติการต่อดอกของสัญญาเดี่ยว
         async function openHistoryModal(id) {
             currentActivePawnId = id;
             const record = pawnRecords.find(r => r.id === id);
@@ -560,7 +750,6 @@
             }
         }
 
-        // ฟังก์ชันแก้ไขยอดเงินในประวัติการต่อดอก
         async function promptEditLog(logId, currentInterest, currentFine) {
             const newInterestStr = prompt("ระบุยอดดอกเบี้ยปกติที่ถูกต้อง (บาท):", currentInterest);
             if (newInterestStr === null) return;
@@ -584,18 +773,19 @@
 
             if (res.ok) {
                 openHistoryModal(currentActivePawnId);
+                fetchDashboardLogs();
             } else {
                 alert("ไม่สามารถบันทึกการแก้ไขได้");
             }
         }
 
-        // ฟังก์ชันลบประวัติการต่อดอก พร้อมสั่งรีเฟรชข้อมูลหน้าจอเพื่อย้อนวันครบกำหนด
         async function handleDeleteLog(logId) {
             if (confirm("ยืนยันที่จะลบรายการประวัติต่อดอกเบี้ยนี้?\n\n*หมายเหตุ: วันครบกำหนดของสัญญาจะถูกย้อนกลับไปเป็นวันก่อนต่อดอกรอบนี้โดยอัตโนมัติ")) {
                 const res = await fetch(`/api/interest-logs?id=${logId}`, { method: 'DELETE' });
                 if (res.ok) {
-                    await fetchPawns(); // โหลดข้อมูลสัญญาทั้งหมดใหม่เพื่อแสดงวันครบกำหนดที่ย้อนกลับ
-                    openHistoryModal(currentActivePawnId); // โหลดประวัติใน Modal ใหม่
+                    await fetchPawns();
+                    openHistoryModal(currentActivePawnId);
+                    fetchDashboardLogs();
                 } else {
                     alert("ไม่สามารถลบรายการได้");
                 }
@@ -691,7 +881,6 @@
             }
         }
 
-        // ฟังก์ชันต่อดอกเบี้ย พร้อมบันทึก previous_due_date เก็บไว้สำหรับย้อนกลับ
         async function handleExtend(id) {
             const record = pawnRecords.find(r => r.id === id);
             if (!record) return;
@@ -700,7 +889,7 @@
             const fineData = calculateFine(record.principal, record.due_date);
             const totalPay = normalInterest + fineData.totalFine;
 
-            const oldDueDateStr = record.due_date; // เก็บวันเดิมไว้
+            const oldDueDateStr = record.due_date;
 
             const parts = record.due_date.split('-');
             const currentDue = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -717,7 +906,6 @@
             confirmMsg += `📅 วันครบกำหนดใหม่จะเป็น: ${currentDue.toLocaleDateString('th-TH')}`;
 
             if (confirm(confirmMsg)) {
-                // 1. อัปเดตวันครบกำหนดใหม่ในตาราง pawns
                 record.due_date = newDueDateStr;
                 await fetch('/api/pawns', {
                     method: 'PUT',
@@ -725,7 +913,6 @@
                     body: JSON.stringify(record)
                 });
 
-                // 2. บันทึกประวัติลง interest_logs โดยส่ง previous_due_date ไปด้วย
                 const now = new Date();
                 const nowTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
                 const logPayload = {
